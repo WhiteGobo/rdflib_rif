@@ -1,3 +1,6 @@
+build:
+	python -m build
+
 .PHONY: test
 test:
 	python -m unittest

@@ -29,16 +29,14 @@ setuptools.setup(
     entry_points = {
         'rdf.plugins.parser': [
             'rif = rdflib_rif:RIFXMLParser',
+            'rif/xml = rdflib_rif:RIFXMLParser',
+            'rifps = rdflib_rif:RIFMarkupParser',
+            'RIFPRD-PS = rdflib_rif:RIFMarkupParser',
         ],
-        #'rdf.plugins.serializer': [
-        #    'clp = rdflib_clips.serializer:ClipsSerializer',
-        #    'Clips = rdflib_clips.serializer:ClipsSerializer',
-        #    'clips = rdflib_clips.serializer:ClipsSerializer',
-        #],
     },
 
     extras_require = {
-        'rifxml validation': ['lxml']
+        'rifxml validation': ['lxml'],
         'test':  ['lxml', 're', 'xml'],
     },
 )
