@@ -1,0 +1,47 @@
+Document(
+
+Prefix( ex1 <http://example.com/2009/prd2#> )
+
+(* ex1:CheckoutRuleset *)
+Group  (
+  (* ex1:GoldRule *)
+  Group  (
+    Forall ?customer such that And(?customer # ex1:Customer
+                                   ?customer[ex1:status -> "Silver"])
+      (Forall ?shoppingCart such that ?customer[ex1:shoppingCart -> ?shoppingCart]
+         (If Exists ?value (And(?shoppingCart[ex1:value -> ?value]
+                                External(pred:numeric-greater-than-or-equal(?value 2000))))
+          Then Do(Modify(?customer[ex1:status -> "Gold"])))))
+
+  (* ex1:DiscountRule *)
+  Group (
+    Forall ?customer such that ?customer # ex1:Customer
+      (If Or( ?customer[ex1:status -> "Silver"]
+              ?customer[ex1:status -> "Gold"])
+       Then Do ((?s ?customer[ex1:shoppingCart ->  ?s])
+                (?v ?s[ex1:value -> ?v])
+                Modify(?s [ex1:value -> External(func:numeric-multiply (?v 0.95))]))))
+
+  (* ex1:NewCustomerAndWidgetRule *)
+  Group (
+    Forall ?customer such that And(?customer # ex1:Customer
+                                    ?customer[ex1:status -> "New"] )
+      (If Exists ?shoppingCart ?item
+                 (And(?customer[ex1:shoppingCart -> ?shoppingCart]
+                      ?shoppingCart[ex1:containsItem -> ?item]
+                      ?item # ex1:Widget ) )
+       Then Do( (?s ?customer[ex1:shoppingCart -> ?s])
+                (?val ?s[ex1:value -> ?val])
+                Retract(?customer ex1:voucher)
+                Modify(?s[ex1:value -> External(func:numeric-multiply(?val 0.90))]))))
+
+  (* ex1:UnknownStatusRule *)
+  Group (
+    Forall ?customer such that ?customer # ex1:Customer
+      (If Not(Exists ?status
+                     (And(?customer[ex1:status -> ?status]
+                          External(pred:list-contains(List("New" "Bronze" "Silver" "Gold") ?status)) )))
+       Then Do( Execute(act:print(External(func:concat("New customer: " ?customer))))
+                Assert(?customer[ex1:status -> "New"]))))
+ )
+)

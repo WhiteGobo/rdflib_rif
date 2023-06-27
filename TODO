@@ -1,0 +1,6 @@
+Email RIF working group to make john in testcases all the same case
+in PRD/PositiveEntailment/Assert John is written john
+Conclusion in tests are written, as they are within a document. Meaning CURIE
+are used but there is no way for a compiler to recognize, how the shortened
+URIs might be extended. So those should be expressed as ANGLEBRACKIRIs instead.
+
