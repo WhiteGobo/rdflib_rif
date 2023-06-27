@@ -1,0 +1,32 @@
+rif-prd parser for rdflib
+=========================
+
+RIF was designed as standard for exchange of all kinds of rules.
+See the (w3c-specification)[https://www.w3.org/TR/rif-overview/] for more information.
+
+This module should provide a simple parser plugin for rdflib.
+You can parse rif/xml per:
+
+```
+	rdflib.Graph().parse("path/to/rif.rif", format="rif")
+	rdflib.Graph().parse("path/to/rif.rif", format="rif/xml")
+```
+
+You can also parse the (presentation syntax for the production rules)[https://www.w3.org/TR/2013/REC-rif-prd-20130205/#sec-presentation-syntax]:
+```
+	rdflib.Graph().parse("path/to/rif.rif", format="rifps")
+	rdflib.Graph().parse("path/to/rif.rif", format="RIFPRD-PS")
+```
+The presentation language for BLD is currently not supported.
+
+
+
+Roadmap to version 1.0
+======================
+
+- Currently the presentation syntax is not supported for all (testcases)[].
+- It would be good if the presentation syntax RIFBLD would be supported too. But i have currently no intentions on implementing it.
+- A serializer for rif/xml. Not necessarily for rifps
+- more documentation
+- script within the package to validate rif files
+- script and public method to translate rifps to rif/xml
