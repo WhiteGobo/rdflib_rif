@@ -1,0 +1,13 @@
+Document(
+  Prefix(ex <http://example.com/example#>)
+  Prefix(rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+
+  Forall ?obj ?transObj such that ?obj[rdf:type -> ex:in](
+	  Do ( (?transObj New())
+		  ?obj[ex:generated -> ?transObj]
+		  ?transObj[rdf:type -> ex:out]
+	  )
+  )
+
+  ex:A[rdf:type -> ex:in]
+)
