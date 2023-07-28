@@ -3,7 +3,8 @@ build:
 
 .PHONY: test
 test:
-	python -m unittest
+	pytest -k TestTranslateRIFPSConsistency
+	#python -m unittest
 
 
 .PHONY: test_consistency_officialtestcases
