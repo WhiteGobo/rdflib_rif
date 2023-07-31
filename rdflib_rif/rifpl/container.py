@@ -86,6 +86,7 @@ class Subclass(rif_element, MetaContainer):
             "super": "super",
             }
 
+
 class Frame(rif_element, MetaContainer):
     type_suffix = "Frame"
     attr_to_suffix = {
@@ -394,10 +395,10 @@ class Expr(Uniterm):
 class Do_action(rif_element, MetaContainer):
     type_suffix = "Do"
     attr_to_suffix = {
-            "Vars": "actionVar",
+            "Vars": "",
             "Actions": "actions",
             }
-    attr_is_list = ["Vars", "Actions"]
+    attr_is_list = ["Actions"]
 
 class Modify(rif_element):
     type_suffix = "Modify"
@@ -444,13 +445,14 @@ class New(prefix_transporter):
     type_suffix = "New"
 
     def as_xml(self, parent, **kwargs):
-        root = ET.Element(self.type_suffix)
+        root = ET.SubElement(parent, self.type_suffix)
         return root
 
     def __iter__(self):
         return iter([])
 
-class Var_init_slot(prefix_transporter):
+class Var_init_slot(rif_element):
+    type_suffix = "actionVar"
     def __init__(self, first, second, **kwargs):
         super().__init__(**kwargs)
         self.first = first
@@ -461,15 +463,31 @@ class Var_init_slot(prefix_transporter):
         first, second = parseresults
         return cls(first, second)
 
-    def as_xml(self, parent, **kwargs):
+    #def as_xml(self, parent, **kwargs):
+    #    self.first._transport_prefix(self._prefixes)
+    #    self.second._transport_prefix(self._prefixes)
+    #    self.first.as_xml(parent=parent, update_prefixes=False)
+    #    self.second.as_xml(parent=parent, update_prefixes=False)
+    def as_xml(self, **kwargs):
+        """
+        :TODO: im not sure why i have to use transport_prefixes here.
+            theoreticly the definition of __iter__ should be sufficient
+        """
+        root = super().as_xml(**kwargs)
+        root.attrib["ordered"] = "yes"
         self.first._transport_prefix(self._prefixes)
         self.second._transport_prefix(self._prefixes)
-        self.first.as_xml(parent=parent, update_prefixes=False)
-        self.second.as_xml(parent=parent, update_prefixes=False)
+        self.first.as_xml(parent=root, update_prefixes=False)
+        self.second.as_xml(parent=root, update_prefixes=False)
+        return root
 
     def __iter__(self):
         yield self.first
         yield self.second
+
+    def __repr__(self):
+        name = type(self).__name__
+        return f"<{name}:{self.first}:{self.second}>"
 
 class negatedformula(rif_element, MetaContainer):
     type_suffix = "INeg"

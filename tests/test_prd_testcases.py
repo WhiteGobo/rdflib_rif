@@ -28,7 +28,7 @@ class TestTranslateRIFPSConsistency:
         ])
     def test_PRD(self, rifps_file, rif_file):
         self.setUp()
-        g_rifps = rdflib.Graph().parse(rifps_file, format="rifps")
+        g_rifps = rdflib.Graph().parse(rifps_file, format="rifps", pretty_logging=True)
         g_rif = rdflib.Graph().parse(rif_file, format="rif")
         from rdflib.compare import to_isomorphic
         cg_ps = to_isomorphic(g_rifps)

@@ -35,6 +35,7 @@ class RIFMarkupParser(rdflib.parser.Parser):
         if isinstance(inputstr, bytes):
             inputstr = inputstr.decode("utf8")
         q = parser.parse_rifpl(inputstr)
+        logger.debug("ASDF:\n%s" % q)
         #q = parser.parse_rifpl(stream)
         xmlbytes = ET.tostring(q.as_xml())
         if pretty_logging:
