@@ -123,14 +123,15 @@ Subclass = pp.Forward()
 GROUNDTERM = pp.Forward()
 Expr = pp.Forward()
 External_formula = pp.Forward()
-New = pp.Optional(IRIMETA) + pp.Suppress("New()")
+New = pp.Optional(IRIMETA) + pp.Suppress("New") - pp.Suppress("(")\
+        + pp.Suppress(")")
+New.set_parse_action(rif_container.New)
 FORMULA = pp.Forward()
-#New.set_parse_action(rif_container.notImpl)
 
 #Document       ::= IRIMETA? 'Document' '(' Base? Prefix* Import* Group? ')'
 Document = pp.Optional(IRIMETA).set_results_name("Meta")\
         + pp.Suppress('Document')\
-        + pp.Suppress('(')\
+        - pp.Suppress('(')\
         + pp.Optional(Base).set_results_name("Base")\
         + pp.ZeroOrMore(Prefix).set_results_name("Prefixes")\
         + pp.ZeroOrMore(Import).set_results_name("directive")\

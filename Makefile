@@ -1,9 +1,12 @@
+PYTHON_TEST ?=python3 -m pytest
+PYTEST_OPT ?=--log-level=INFO
+
 build:
 	python -m build
 
 .PHONY: test
 test:
-	pytest -k TestTranslateRIFPSConsistency
+	$(PYTHON_TEST) $(PYTEST_OPT) -k TestTranslateRIFPSConsistency
 	#python -m unittest
 
 

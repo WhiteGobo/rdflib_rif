@@ -4,6 +4,8 @@ import abc
 import typing as typ
 import rdflib
 import xml.etree.ElementTree as ET
+import logging
+logger = logging.getLogger(__name__)
 
 _RIF = rdflib.Namespace("http://www.w3.org/2007/rif#")
 _RIF_builtin = rdflib.Namespace("http://www.w3.org/2007/rif-builtin-action#")
@@ -51,7 +53,6 @@ class prefix_transporter(abc.ABC):
             transport their prefixes further down
         """
         self._prefixes.update(prefixes)
-        assert not self.__working
         self.__working = True
         for x in self:
             try:

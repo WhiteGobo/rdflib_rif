@@ -397,7 +397,7 @@ class Do_action(rif_element, MetaContainer):
             "Vars": "actionVar",
             "Actions": "actions",
             }
-    attr_is_list = ["Actions"]
+    attr_is_list = ["Vars", "Actions"]
 
 class Modify(rif_element):
     type_suffix = "Modify"
@@ -440,6 +440,15 @@ class Assert(rif_element, MetaContainer):
         Target, = ParserResults
         return cls(Target=Target)
 
+class New(prefix_transporter):
+    type_suffix = "New"
+
+    def as_xml(self, parent, **kwargs):
+        root = ET.Element(self.type_suffix)
+        return root
+
+    def __iter__(self):
+        return iter([])
 
 class Var_init_slot(prefix_transporter):
     def __init__(self, first, second, **kwargs):
