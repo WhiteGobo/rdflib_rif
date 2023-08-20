@@ -43,16 +43,17 @@ class TestParsingPlugin(unittest.TestCase):
         cout_g = compare.to_isomorphic(out_g)
         try:
             self.assertEqual(cg, cout_g)
+            assert False
         except AssertionError:
             shared, additional, missing = rdflib.compare.graph_diff(cg, cout_g)
             g.bind("rif", "http://www.w3.org/2007/rif#")
             additional.bind("rif", "http://www.w3.org/2007/rif#")
             missing.bind("rif", "http://www.w3.org/2007/rif#")
             shared.bind("rif", "http://www.w3.org/2007/rif#")
-            logger.debug("produced graph:\n%s" % g.serialize())
-            logger.debug("additional info:\n%s"% additional.serialize())
-            logger.debug("missing info:\n%s"% missing.serialize())
-            logger.debug("shared info:\n%s"%shared.serialize())
+            logger.info("produced graph:\n%s" % g.serialize())
+            logger.info("additional info:\n%s"% additional.serialize())
+            logger.info("missing info:\n%s"% missing.serialize())
+            logger.info("shared info:\n%s"%shared.serialize())
             raise
 
 if __name__=='__main__':

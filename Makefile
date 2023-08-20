@@ -6,7 +6,7 @@ build:
 
 .PHONY: test
 test:
-	$(PYTHON_TEST) $(PYTEST_OPT) -k TestTranslateRIFPSConsistency
+	$(PYTHON_TEST) $(PYTEST_OPT) -k test_parsing
 	#python -m unittest
 
 

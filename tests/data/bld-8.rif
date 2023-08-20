@@ -11,6 +11,12 @@
     xmlns="http://www.w3.org/2007/rif#"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:xs="http://www.w3.org/2001/XMLSchema#">
+  <directive>
+    <Import>
+      <location>http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_SubClass_5/RDF_Combination_SubClass_5-import001</location>
+      <profile>http://www.w3.org/ns/entailment/Simple</profile>
+    </Import>
+  </directive>
   <payload>
    <Group>
     <id>

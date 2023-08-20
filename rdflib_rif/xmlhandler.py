@@ -29,6 +29,9 @@ class _XMLNS:
 class _RIF:
     _base = rdflib.URIRef("http://www.w3.org/2007/rif#")
     Document = _base+"Document"
+    Import = _base + "Import"
+    location = _base + "location"
+    profile = _base + "profile"
     payload = _base+"payload"
     Group = _base+"Group"
     id = _base+"id"
