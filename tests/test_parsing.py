@@ -43,7 +43,6 @@ class TestParsingPlugin(unittest.TestCase):
         cout_g = compare.to_isomorphic(out_g)
         try:
             self.assertEqual(cg, cout_g)
-            assert False
         except AssertionError:
             shared, additional, missing = rdflib.compare.graph_diff(cg, cout_g)
             g.bind("rif", "http://www.w3.org/2007/rif#")

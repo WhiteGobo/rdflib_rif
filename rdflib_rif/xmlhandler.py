@@ -6,6 +6,8 @@ from xml.sax import handler, make_parser, xmlreader
 from xml.sax.handler import ErrorHandler
 from xml.sax.saxutils import escape, quoteattr
     
+import logging
+logger = logging.getLogger(__name__)
 import rdflib.parser
 from rdflib.exceptions import Error, ParserError
 from rdflib.namespace import is_ncname
@@ -303,9 +305,12 @@ class _default_property(_state_with_axioms, _createnode_mixin):
         elif self.ordered:
             prop_type = self.typeof
             property_type = 2
-        else:
+        elif len(self._targets) == 0:
             prop_type = self.typeof
             property_type = 1
+        else:
+            prop_type = self.typeof
+            property_type = 0
         if property_type == 2:
             #TODO _properties should not be used from here
             try:
@@ -327,6 +332,9 @@ class _default_property(_state_with_axioms, _createnode_mixin):
             self.parentnode.append_axiom((slot_id, _RDF.type, _RIF.Slot))
             self.parentnode.append_axiom((slot_id, _RIF.slotkey, key.id))
             self.parentnode.append_axiom((slot_id, _RIF.slotvalue, value.id))
+        elif property_type == 1:
+            value = rdflib.Literal(self.content)
+            self.parentnode.append_property(prop_type, value)
         else:
             for obj in self._targets:
                 self.parentnode.append_property(prop_type, obj.id)
