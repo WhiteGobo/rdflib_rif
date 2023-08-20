@@ -33,6 +33,7 @@ class TestTranslateRIFPSConsistency:
         from rdflib.compare import to_isomorphic
         cg_ps = to_isomorphic(g_rifps)
         cg = to_isomorphic(g_rif)
+        logger.info("File that was loaded: %s" % rifps_file)
         try:
             assert cg == cg_ps
         except AssertionError as err:

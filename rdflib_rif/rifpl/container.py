@@ -104,7 +104,7 @@ class Import(rif_element, MetaContainer):
 
     def as_xml(self, **kwargs):
         root = super().as_xml(**kwargs)
-        location_n = ET.SubElement(root, "profile")
+        location_n = ET.SubElement(root, "location")
         location_n.text = str(self.Location)
         if self.Profile is not None:
             profile_n = ET.SubElement(root, "profile")

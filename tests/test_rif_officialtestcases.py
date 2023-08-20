@@ -355,7 +355,8 @@ class TestOfficialTestCases(unittest.TestCase):
                 conc = conc[0]
 
     def compareRIFDocuments(self, premises: list[dict], pretty_logging=True):
-        premises = iter(premises)
+        q = list(premises)
+        premises = iter(q)
         x = premises.__next__()
         g1 = rdflib.Graph()
         try:
@@ -378,6 +379,7 @@ class TestOfficialTestCases(unittest.TestCase):
                 raise Exception("Got exception when produced graph "
                                 "with args: %s" % alt) from err
             cg2 = rdflib.compare.to_isomorphic(g2)
+            logger.info("Information about premises: %s" % q)
             try:
                 self.assertEqual(cg1, cg2)
             except AssertionError as err:
@@ -385,12 +387,12 @@ class TestOfficialTestCases(unittest.TestCase):
                 g1.bind("rif", "http://www.w3.org/2007/rif#")
                 for x in (shared, infirst, insecond):
                     x.bind("rif", "http://www.w3.org/2007/rif#")
-                logger.debug("more information for err: %s" %err)
-                logger.debug("first graph:\n%s" % g1.serialize())
-                logger.debug("second graph:\n%s" % g2.serialize())
-                logger.debug("info only in first:\n%s"% infirst.serialize())
-                logger.debug("info only in second:\n%s"% insecond.serialize())
-                logger.debug("shared info:\n%s"%shared.serialize())
+                logger.info("more information for err: %s" %err)
+                logger.info("first graph:\n%s" % g1.serialize())
+                logger.info("second graph:\n%s" % g2.serialize())
+                logger.info("info only in first:\n%s"% infirst.serialize())
+                logger.info("info only in second:\n%s"% insecond.serialize())
+                logger.info("shared info:\n%s"%shared.serialize())
                 raise err
 
 
