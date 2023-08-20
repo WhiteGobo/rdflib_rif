@@ -381,9 +381,10 @@ class _Document(_default_node):
                                           directives_id))
         else:
             #This is because of a bug in rdflib.collection.Collection
-            self.parentnode.append_axiom((self.id,
-                                          rdflib.URIRef(_RIF.directives),
-                                          _RDF.nil))
+            #self.parentnode.append_axiom((self.id,
+            #                              rdflib.URIRef(_RIF.directives),
+            #                              _RDF.nil))
+            pass
 
         return previousstate
 

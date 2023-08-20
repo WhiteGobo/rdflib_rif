@@ -100,6 +100,5 @@
   ) .
 
 [] a ns1:Document ;
-    ns1:directives () ;
     ns1:payload <http://sample.org> .
 
