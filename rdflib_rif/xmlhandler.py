@@ -365,9 +365,9 @@ class _Document(_default_node):
     def __init__(self, typeof, **kwargs):
         super().__init__(typeof, **kwargs)
         self.directives = []
+
     def close(self):
         previousstate = super().close()
-        
         if self.directives:
             tmpg = rdflib.Graph()
             directives_id = rdflib.BNode()
@@ -379,13 +379,6 @@ class _Document(_default_node):
             self.parentnode.append_axiom((self.id,
                                           rdflib.URIRef(_RIF.directives),
                                           directives_id))
-        else:
-            #This is because of a bug in rdflib.collection.Collection
-            #self.parentnode.append_axiom((self.id,
-            #                              rdflib.URIRef(_RIF.directives),
-            #                              _RDF.nil))
-            pass
-
         return previousstate
 
 
@@ -442,4 +435,3 @@ class RIFXMLHandler(xml.sax.handler.ContentHandler):
 
     def ignorableWhitespace(self, content):
         pass
-
