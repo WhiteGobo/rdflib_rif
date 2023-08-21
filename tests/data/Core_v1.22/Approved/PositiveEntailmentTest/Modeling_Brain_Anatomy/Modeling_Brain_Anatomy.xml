@@ -59,7 +59,7 @@ Document(
   Prefix(rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
   Prefix(dc  <http://purl.org/dc/elements/1.1/>)
 
-  Import(<http://example.org/ontology1> <http://www.w3.org/ns/entailment/OWL-Direct>)
+  Import(<http://www.w3.org/2005/rules/test/repository/tc/Modeling_Brain_Anatomy/Modeling_Brain_Anatomy-import001.rdf> <http://www.w3.org/ns/entailment/OWL-Direct>)
   
   Group (
    
@@ -84,7 +84,7 @@ Document(
   Prefix(rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
   Prefix(dc  <http://purl.org/dc/elements/1.1/>)
 
-  Import(<http://example.org/ontology1> <http://www.w3.org/ns/entailment/OWL-Direct>)
+  Import(<http://www.w3.org/2005/rules/test/repository/tc/Modeling_Brain_Anatomy/Modeling_Brain_Anatomy-import001.rdf> <http://www.w3.org/ns/entailment/OWL-Direct>)
   
   Group (
    

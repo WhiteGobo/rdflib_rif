@@ -36,7 +36,7 @@ Document(
   Prefix(ex  <http://example.org/example#>)
   Prefix(dc <http://purl.org/dc/elements/1.1/>)
 
-  Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/OWL-Direct>)
+  Import(<http://www.w3.org/2005/rules/test/repository/tc/Non-Annotation_Entailment/Non-Annotation_Entailment-import001> <http://www.w3.org/ns/entailment/OWL-Direct>)
 
   Group (
 	  Forall ?x ?y ( 
@@ -50,7 +50,7 @@ Document(
   Prefix(ex  <http://example.org/example#>)
   Prefix(dc <http://purl.org/dc/elements/1.1/>)
 
-  Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/OWL-Direct>)
+  Import(<http://www.w3.org/2005/rules/test/repository/tc/Non-Annotation_Entailment/Non-Annotation_Entailment-import001> <http://www.w3.org/ns/entailment/OWL-Direct>)
 
   Group (
    Forall ?x ?y ( ?x[ex:hasTitle -> ?y] :- ?x[dc:title -> ?y])

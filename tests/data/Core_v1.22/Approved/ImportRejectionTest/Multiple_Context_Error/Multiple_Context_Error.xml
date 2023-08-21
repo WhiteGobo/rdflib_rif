@@ -47,7 +47,7 @@ Document(
 Document (
  Prefix(eg <http://example.org/example#>)
  Prefix(xs <http://www.w3.org/2001/XMLSchema#>) 
- Import(<http://example.org/doc1>)
+ Import(<http://www.w3.org/2005/rules/test/repository/tc/Multiple_Context_Error/Multiple_Context_Error-import001.rif>)
 
  Group ( 
 
@@ -62,7 +62,7 @@ Document (
 Document (
  Prefix(eg <http://example.org/example#>)
  Prefix(xs <http://www.w3.org/2001/XMLSchema#>) 
- Import(<http://example.org/doc1>)
+ Import(<http://www.w3.org/2005/rules/test/repository/tc/Multiple_Context_Error/Multiple_Context_Error-import001.rif>)
 
  Group ( 
 

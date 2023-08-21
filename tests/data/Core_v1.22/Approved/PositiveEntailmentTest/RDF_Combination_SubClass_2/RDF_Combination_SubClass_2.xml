@@ -31,7 +31,7 @@
         </Normative>
         <Presentation syntax="RIFBLD-PS"><![CDATA[
 Document(
-    Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/RDFS>)
+    Import(<http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_SubClass_2/RDF_Combination_SubClass_2-import001> <http://www.w3.org/ns/entailment/RDFS>)
  )
 ]]></Presentation>
     </PremiseDocument>

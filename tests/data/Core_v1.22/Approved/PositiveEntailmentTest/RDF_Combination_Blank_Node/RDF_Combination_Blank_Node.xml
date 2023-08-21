@@ -29,7 +29,7 @@ Document(
 
      Prefix(ex  <http://example.org/example#>)
      Prefix(rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
-     Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/RDF>)
+     Import(<http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_Blank_Node/RDF_Combination_Blank_Node-import001> <http://www.w3.org/ns/entailment/RDF>)
 
      Group (
         Forall ?x ?y ( If ?x[ex:hasName -> ?y] Then ?x[rdf:type -> ex:named] )
@@ -42,7 +42,7 @@ Document(
 
      Prefix(ex  <http://example.org/example#>)
      Prefix(rdf <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
-     Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/RDF>)
+     Import(<http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_Blank_Node/RDF_Combination_Blank_Node-import001> <http://www.w3.org/ns/entailment/RDF>)
 
      Group (
         Forall ?x ?y ( ?x[rdf:type -> ex:named] :- ?x[ex:hasName -> ?y] )

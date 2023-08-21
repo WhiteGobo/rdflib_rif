@@ -31,12 +31,12 @@
         </Normative>
         <Presentation syntax="RIFPRD-PS"><![CDATA[
 Document(
-    Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/Simple>)
+    Import(<http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_SubClass/RDF_Combination_SubClass-import001> <http://www.w3.org/ns/entailment/Simple>)
  )
 ]]></Presentation>
         <Presentation syntax="RIFBLD-PS"><![CDATA[
 Document(
-    Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/Simple>)
+    Import(<http://www.w3.org/2005/rules/test/repository/tc/RDF_Combination_SubClass/RDF_Combination_SubClass-import001> <http://www.w3.org/ns/entailment/Simple>)
  )
 ]]></Presentation>
     </PremiseDocument>

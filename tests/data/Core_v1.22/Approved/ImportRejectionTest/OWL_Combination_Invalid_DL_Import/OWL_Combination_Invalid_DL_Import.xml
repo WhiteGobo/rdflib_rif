@@ -26,7 +26,7 @@
         </Normative>
         <Presentation syntax="RIFPRD-PS"><![CDATA[
 Document(
-    Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/OWL-Direct>)
+    Import(<http://www.w3.org/2005/rules/test/repository/tc/OWL_Combination_Invalid_DL_Import/OWL_Combination_Invalid_DL_Import-import001> <http://www.w3.org/ns/entailment/OWL-Direct>)
 
     Group (
     )
@@ -34,7 +34,7 @@ Document(
 ]]></Presentation>
         <Presentation syntax="RIFBLD-PS"><![CDATA[
 Document(
-    Import(<http://example.org/mygraph> <http://www.w3.org/ns/entailment/OWL-Direct>)
+    Import(<http://www.w3.org/2005/rules/test/repository/tc/OWL_Combination_Invalid_DL_Import/OWL_Combination_Invalid_DL_Import-import001> <http://www.w3.org/ns/entailment/OWL-Direct>)
 
     Group (
     )
