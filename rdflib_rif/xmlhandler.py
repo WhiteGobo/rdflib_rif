@@ -254,7 +254,14 @@ class _Const(_default_node):
             value = rdflib.Literal(self.content, datatype=_XSDNS.string)
         elif str(const_type) == str(_RDF.PlainLiteral):
             pred = rdflib.URIRef(_RIF.value)
-            value = rdflib.Literal(self.content)
+            content = str(self.content)
+            lang = None
+            i = content.find("@")
+            if i >= 0:
+                if i < len(content):
+                    lang = content[i+1:]
+                content = content[:i]
+            value = rdflib.Literal(content, lang)
         else:
             pred = rdflib.URIRef(_RIF.value)
             value = rdflib.Literal(self.content, datatype=const_type)
