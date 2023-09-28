@@ -1,6 +1,6 @@
 from urllib.parse import urldefrag, urljoin
 import xml.sax
-from xml.sax import handler, make_parser, xmlreader
+from xml.sax import handler, make_parser, xmlreader, SAXParseException
 from xml.sax.handler import ErrorHandler
 from xml.sax.saxutils import escape, quoteattr
     
@@ -12,6 +12,9 @@ from rdflib.term import BNode, Literal, URIRef
 
 
 from . import xmlhandler
+
+class XMLRif_PluginException(rdflib.plugin.PluginException):
+    pass
 
 class _parsercreator(xml.sax.handler.ContentHandler):
     @classmethod
@@ -33,6 +36,9 @@ class RIFXMLParser(rdflib.parser.Parser):
     _parser: xmlreader.XMLReader
 
     def parse(self, source, sink, preserve_bnode_ids=None):
+        """
+        :raises XMLRif_PluginException:
+        """
         self._parser = RIFXMLHandler.create_parser(source, sink)
         content_handler = self._parser.getContentHandler()
         if preserve_bnode_ids is not None:
@@ -40,4 +46,7 @@ class RIFXMLParser(rdflib.parser.Parser):
         # # We're only using it once now
         # content_handler.reset()
         # self._parser.reset()
-        self._parser.parse(source)
+        try:
+            self._parser.parse(source)
+        except SAXParseException as err:
+            raise XMLRif_PluginException() from err
