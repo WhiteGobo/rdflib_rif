@@ -6,7 +6,8 @@ build:
 
 .PHONY: test
 test:
-	$(PYTHON_TEST) $(PYTEST_OPT) -k test_parsing
+	$(PYTHON_TEST) $(PYTEST_OPT) -k failed
+	$(PYTHON_TEST) $(PYTEST_OPT) -k test_compare_rif_and_rifps
 	#python -m unittest
 
 
