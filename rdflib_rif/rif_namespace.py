@@ -34,6 +34,7 @@ class RIF(DefinedNamespace):
     declare: URIRef
     Var: URIRef
     Frame: URIRef
+    Subclass: URIRef
     formula: URIRef
     Implies: URIRef
     then: URIRef
