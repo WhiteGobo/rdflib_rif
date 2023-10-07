@@ -1,1 +1,0 @@
-Exists ?x (?x[foaf:homepage -> "http://www.example.org/"^^rif:iri])

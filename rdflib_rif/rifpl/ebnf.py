@@ -103,7 +103,8 @@ Strategy = pp.Forward()
 Priority = pp.Forward()
 RULE = pp.Forward()
 Var = pp.Forward()
-Implies = pp.Forward()
+Implies_PRD = pp.Forward()
+Implies_Core = pp.Forward()
 ACTION_BLOCK = pp.Forward()
 Assert = pp.Forward()
 Retract = pp.Forward()
@@ -170,13 +171,17 @@ Forall = pp.Optional(IRIMETA) + pp.Suppress('Forall')\
         - RULE.set_results_name("formula")\
         - pp.Suppress(')'))
 Forall.set_parse_action(rif_container.Forall._parse)
-RULE << pp.MatchFirst((Forall, Implies, ACTION_BLOCK))
+RULE << pp.MatchFirst((Forall, Implies_PRD, Implies_Core, ACTION_BLOCK))
 
-#Implies        ::= IRIMETA? 'If' FORMULA 'Then' ACTION_BLOCK
-Implies << pp.Optional(IRIMETA) + pp.Suppress('If')\
+#Implies_PRD        ::= IRIMETA? 'If' FORMULA 'Then' ACTION_BLOCK
+Implies_PRD << pp.Optional(IRIMETA) + pp.Suppress('If')\
         - FORMULA.set_results_name("Formula") - pp.Suppress('Then')\
         - ACTION_BLOCK.set_results_name("Actionblock")
-Implies.set_parse_action(rif_container.Implies._parse)
+Implies_PRD.set_parse_action(rif_container.Implies._parse)
+Implies_Core << pp.Optional(IRIMETA)\
+        + ACTION_BLOCK.set_results_name("Actionblock") + pp.Suppress(':-')\
+        - FORMULA.set_results_name("Formula")
+Implies_Core.set_parse_action(rif_container.Implies._parse)
 #LOCATOR        ::= ANGLEBRACKIRI
 LOCATOR << ANGLEBRACKIRI
 #PROFILE        ::= ANGLEBRACKIRI
@@ -332,7 +337,8 @@ IRIMETA << pp.Suppress('(*')\
 :TODO: This doesnt work (* ex:frame[] *)
 """
 
-RIFPRD_PS = Document | Group | Forall | Implies | Assert | Retract\
+RIFPRD_PS = Document | Group | Forall | Implies_PRD | Implies_Core\
+        | Assert | Retract\
         | Modify | And_formula | Exists\
         | Equal\
         | Subclass | Atom | Frame | Member

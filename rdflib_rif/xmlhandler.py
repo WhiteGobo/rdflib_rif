@@ -5,7 +5,8 @@ import xml.sax.handler
 from xml.sax import handler, make_parser, xmlreader
 from xml.sax.handler import ErrorHandler
 from xml.sax.saxutils import escape, quoteattr
-    
+
+from collections.abc import Mapping
 import logging
 logger = logging.getLogger(__name__)
 import rdflib.parser
@@ -21,6 +22,9 @@ import re
 
 import rdflib
 
+class BadSyntax(SyntaxError):
+    ...
+
 _RDF = rdflib.Namespace(rdflib.RDF)
 _XSDNS = rdflib.Namespace("http://www.w3.org/2001/XMLSchema#")
 _XML = rdflib.Namespace("http://www.w3.org/XML/1998/namespace")
@@ -28,81 +32,20 @@ class _XMLNS:
     xs = "http://www.w3.org/2001/XMLSchema"
     xml = "http://www.w3.org/XML/1998/namespacebase"
 
-class _RIF:
-    _base = rdflib.URIRef("http://www.w3.org/2007/rif#")
-    Document = _base+"Document"
-    Import = _base + "Import"
-    location = _base + "location"
-    profile = _base + "profile"
-    payload = _base+"payload"
-    Group = _base+"Group"
-    id = _base+"id"
-    Const = _base+"Const"
-    meta = _base+"meta"
-    directive = _base + "directive"
-    Exists = _base + "Exists"
-    directives = _base + "directives"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    vars = _base + "vars"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    sentences = _base + "sentences"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    formulas = _base + "formulas"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    sentence = _base + "sentence"
-    Forall = _base + "Forall"
-    Then = _base + "Then"
-    declare = _base + "declare"
-    Var = _base + "Var"
-    Frame = _base + "Frame"
-    formula = _base + "formula"
-    Implies = _base + "Implies"
-    if_ = _base + "if"
-    then = _base + "then"
-    And = _base + "And"
-    Or = _base + "Or"
-    Atom = _base + "Atom"
-    op = _base + "op"
-    args = _base + "args"
-    Equal = _base + "Equal"
-    left = _base + "left"
-    right = _base + "right"
-    External = _base + "External"
-    content = _base + "content"
-    Expr = _base + "Expr"
-    varname = _base + "varname"
-    constIRI = _base + "constIRI"
-    constname = _base + "constname"
-    value = _base + "value"
-    type = _base + "type"
-    iri = _base + "iri"
-    local = _base + "local"
-    slot = _base + "slot"
-    """Term only in xml/rif. See :term:`table 3`"""
-    Slot = _base + "Slot"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    slots = _base + "slots"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    slotkey = _base + "slotkey"
-    """Term only in rdf/rif. See :term:`table 3`"""
-    slotvalue = _base + "slotvalue"
-    """Term only in rdf/rif. See :term:`table 3`"""
-
-    @classmethod
-    def __str__(cls):
-        return cls._base
+from .rif_namespace import RIF as _RIF
 
 class _createnode_mixin:
+    _special_states: Mapping[str, "_state"]
+    _default_state: "_state"
     def create_nodestate(self, trans, attrs):
+        """
+        :raises: BadSyntax
+        """
         kwargs = {"parentnode":self, "attrs":attrs, "typeof":trans}
-        if str(trans) == str(_RIF.Var):
-            nextstate = _Var(**kwargs)
-        elif str(trans) == str(_RIF.Const):
-            nextstate = _Const(**kwargs)
-        elif str(trans) == str(_RIF.Document):
-            nextstate = _Document(**kwargs)
-        else:
-            nextstate = _default_node(**kwargs)
+        state_gen = self._special_states.get(str(trans), self._default_state)
+        if trans not in _RIF:
+            raise BadSyntax("Found for Rif unsupported predicate %s" % trans)
+        nextstate = state_gen(**kwargs)
         return nextstate
 
 class _state(abc.ABC):
@@ -258,8 +201,7 @@ class _Const(_default_node):
             lang = None
             i = content.find("@")
             if i >= 0:
-                if i < len(content):
-                    lang = content[i+1:]
+                lang = content[i+1:] if i < len(content) else None
                 content = content[:i]
             value = rdflib.Literal(content, lang)
         else:
@@ -270,6 +212,7 @@ class _Const(_default_node):
 
 class _default_property(_state_with_axioms, _createnode_mixin):
     def __init__(self, typeof, parentnode, attrs):
+        attrs = dict(attrs)
         super().__init__(parentnode=parentnode, attrs=attrs)
         self.typeof = rdflib.URIRef(typeof)
         self._targets = []
@@ -301,12 +244,10 @@ class _default_property(_state_with_axioms, _createnode_mixin):
         elif p in (_RIF.And, _RIF.Or) and s == _RIF.formula:
             prop_type = _RIF.formulas
             property_type = 2
-        elif self.parentnode.typeof == _RIF.Frame\
-                and self.typeof == _RIF.slot:
+        elif p == _RIF.Frame and s == _RIF.slot:
             prop_type = _RIF.slots
             property_type = 3
-        elif self.parentnode.typeof in (_RIF.Atom, _RIF.Expr)\
-                and self.typeof == _RIF.slot:
+        elif p in (_RIF.Atom, _RIF.Expr) and s == _RIF.slot:
             prop_type = _RIF.namedargs
             property_type = 3
         elif self.ordered:
@@ -318,7 +259,10 @@ class _default_property(_state_with_axioms, _createnode_mixin):
         else:
             prop_type = self.typeof
             property_type = 0
-        if property_type == 2:
+        if property_type == 1:
+            value = rdflib.Literal(self.content)
+            self.parentnode.append_property(prop_type, value)
+        elif property_type == 2:
             #TODO _properties should not be used from here
             try:
                 _, queue_id = filter(lambda prop_obj: prop_obj[0] == prop_type,
@@ -339,9 +283,6 @@ class _default_property(_state_with_axioms, _createnode_mixin):
             self.parentnode.append_axiom((slot_id, _RDF.type, _RIF.Slot))
             self.parentnode.append_axiom((slot_id, _RIF.slotkey, key.id))
             self.parentnode.append_axiom((slot_id, _RIF.slotvalue, value.id))
-        elif property_type == 1:
-            value = rdflib.Literal(self.content)
-            self.parentnode.append_property(prop_type, value)
         else:
             for obj in self._targets:
                 self.parentnode.append_property(prop_type, obj.id)
@@ -453,3 +394,9 @@ class RIFXMLHandler(xml.sax.handler.ContentHandler):
 
     def ignorableWhitespace(self, content):
         pass
+
+_createnode_mixin._special_states = {str(_RIF.Var): _Var,
+                                     str(_RIF.Const): _Const,
+                                     str(_RIF.Document): _Document,
+                                     }
+_createnode_mixin._default_state = _default_node

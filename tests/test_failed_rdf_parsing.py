@@ -1,5 +1,6 @@
 from rdflib import Graph
 from pytest import xfail
+from rdflib_rif import BadSyntax
 
 data="""
 <rdf:RDF
@@ -20,7 +21,7 @@ def test_failed_RDF_parsing(register_rif_format):
     err = None
     try:
         g = Graph().parse(data=data, format="rif")
-    except Exception as err_:
+    except BadSyntax as err_:
         err = err_
     assert err is not None
     #assert isinstance(err, rdflib.pareser.exception)

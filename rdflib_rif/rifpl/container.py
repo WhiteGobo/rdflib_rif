@@ -252,9 +252,17 @@ class literal(Const):
                 return self.datatype.iri
 
     def as_xml(self, **kwargs):
+        """
+        Setting currently RDF.PlainLiteral as value if lang is given
+        :TODO: Check difference RDF.PlainLiteral and xsd.string.
+            Because xsd.string is standard for literals for rdflib
+            and in rif-test files rdf.plainliteral is used
+        """
+        root = super().as_xml(**kwargs)
         if self.lang is not None:
-            raise NotImplementedError("lang not supported yet in literals.")
-        return super().as_xml(**kwargs)
+            root.text = "@".join((root.text, self.lang))
+            root.attrib["type"] = rdflib.RDF.PlainLiteral
+        return root
 
 
 class Const_withlang(Const):
