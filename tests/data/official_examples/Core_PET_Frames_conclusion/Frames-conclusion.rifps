@@ -1,1 +1,1 @@
-ex:customer017[ex:discount -> 10 ex:name -> "John Doe"]
+<http://example.org/example#customer017>[<http://example.org/example#discount> -> 10 <http://example.org/example#name> -> "John Doe"]

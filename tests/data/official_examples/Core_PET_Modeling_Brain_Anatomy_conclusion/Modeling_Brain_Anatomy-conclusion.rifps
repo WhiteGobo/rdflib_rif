@@ -1,1 +1,1 @@
-ba:g1[ba:isMAEConnectedTo -> ba:pcg0]
+<http://example.org/testOntology.owl#g1>[<http://example.org/testOntology.owl#isMAEConnectedTo> -> <http://example.org/testOntology.owl#pcg0>]

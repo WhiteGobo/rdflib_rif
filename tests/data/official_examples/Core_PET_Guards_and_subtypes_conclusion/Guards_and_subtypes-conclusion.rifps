@@ -1,4 +1,4 @@
 And (
-  ex:p("pass 1")
-  ex:p("pass 2")
+  <http://example.org/example#p>("pass 1")
+  <http://example.org/example#p>("pass 2")
 )
