@@ -27,6 +27,10 @@ class my_exc(pp.ParseFatalException):
     def capture_any(cls):
         return cls.raise_if(pp.Regex(".*"))
 
+class _exc_rifprd(my_exc):
+    msg = "This doesnt look like a rif-prd document. It must start "\
+            "with Document, got:"
+
 class _exc_retract(my_exc):
     msg = "Retracts targets expect (atom| frame| (term+term)| term), got:"
 
@@ -341,7 +345,8 @@ RIFPRD_PS = Document | Group | Forall | Implies_PRD | Implies_Core\
         | Assert | Retract\
         | Modify | And_formula | Exists\
         | Equal\
-        | Subclass | Atom | Frame | Member
+        | Subclass | Atom | Frame | Member\
+        | _exc_rifprd.raise_if(pp.Regex(".+"))
 """This should contain all possible Things with metadata. It is used, when
 parsing arbitrary data in RIFPRD-PS.
 """
