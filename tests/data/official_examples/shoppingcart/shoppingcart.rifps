@@ -1,0 +1,7 @@
+Prefix(ex <http://example.com/2008/prd1#>)
+(* ex:rule_1 *)
+Forall ?customer ?purchasesYTD (
+ If   And( ?customer#ex:Customer
+           ?customer[ex:purchasesYTD->?purchasesYTD]
+           External(pred:numeric-greater-than(?purchasesYTD 5000)) )
+ Then Do( Modify(?customer[ex:status->"Gold"]) ) )
