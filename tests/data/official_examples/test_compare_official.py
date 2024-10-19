@@ -8,6 +8,39 @@ logger = logging.getLogger(__name__)
 
 from . import DoNew
 from . import shoppingcart
+
+from . import BLD_NET_Classification_non_inheritance_premise
+from . import BLD_NET_Named_Argument_Uniterms_non_polymorphic_premise
+from . import BLD_NET_OpenLists_premise
+from . import BLD_NET_RDF_Combination_SubClass_5_premise
+from . import BLD_NST_No_free_variables
+from . import BLD_PET_Arbitrary_Entailment_premise
+from . import BLD_PET_Chaining_strategy_numeric_add_2_premise
+from . import BLD_PET_Chaining_strategy_numeric_subtract_1_premise
+from . import BLD_PET_Class_Membership_premise
+from . import BLD_PET_Classification_inheritance_premise
+from . import BLD_PET_ElementEqualityFromListEquality_premise
+from . import BLD_PET_EntailEverything_premise
+from . import BLD_PET_Equality_in_conclusion_1_premise
+from . import BLD_PET_Equality_in_conclusion_2_premise
+from . import BLD_PET_Equality_in_conclusion_3_premise
+from . import BLD_PET_Equality_in_condition_premise
+from . import BLD_PET_Factorial_Functional_premise
+from . import BLD_PET_Factorial_Relational_premise
+from . import BLD_PET_IRI_from_IRI_premise
+from . import BLD_PET_Inconsistent_Entailment_premise
+from . import BLD_PET_Individual_Data_Separation_Inconsistency_premise
+from . import BLD_PET_ListConstantEquality_premise
+from . import BLD_PET_ListEqualityFromElementEquality_premise
+from . import BLD_PET_ListLiteralEquality_premise
+from . import BLD_PET_Multiple_IRIs_from_String_premise
+from . import BLD_PET_Multiple_Strings_from_IRI_premise
+from . import BLD_PET_Named_Arguments_premise
+from . import BLD_PET_RDF_Combination_Member_1_premise
+from . import BLD_PET_RDF_Combination_SubClass_4_premise
+from . import BLD_PET_RDF_Combination_SubClass_6_premise
+from . import BLD_PET_YoungParentDiscount_1_premise
+
 from . import PRD_PET_AssertRetract2_conclusion
 from . import PRD_PET_AssertRetract2_premise
 from . import PRD_PET_AssertRetract_conclusion
@@ -101,6 +134,70 @@ def register_rif_format() -> None:
 
 
 @pytest.fixture(params=[
+    param(BLD_NET_Classification_non_inheritance_premise,
+          id="BLD_NET_Classification_non_inheritance_premise"),
+    param(BLD_NET_Classification_non_inheritance_premise,
+          id="BLD_NET_Classification_non_inheritance_premise"),
+    param(BLD_NET_Named_Argument_Uniterms_non_polymorphic_premise,
+          id="BLD_NET_Named_Argument_Uniterms_non_polymorphic_premise"),
+    param(BLD_NET_OpenLists_premise,
+          id="BLD_NET_OpenLists_premise"),
+    param(BLD_NET_RDF_Combination_SubClass_5_premise,
+          id="BLD_NET_RDF_Combination_SubClass_5_premise"),
+    param(BLD_NST_No_free_variables,
+          id="BLD_NST_No_free_variables"),
+    param(BLD_PET_Arbitrary_Entailment_premise,
+          id="BLD_PET_Arbitrary_Entailment_premise"),
+    param(BLD_PET_Chaining_strategy_numeric_add_2_premise,
+          id="BLD_PET_Chaining_strategy_numeric_add_2_premise"),
+    param(BLD_PET_Chaining_strategy_numeric_subtract_1_premise,
+          id="BLD_PET_Chaining_strategy_numeric_subtract_1_premise"),
+    param(BLD_PET_Class_Membership_premise,
+          id="BLD_PET_Class_Membership_premise"),
+    param(BLD_PET_Classification_inheritance_premise,
+          id="BLD_PET_Classification_inheritance_premise"),
+    param(BLD_PET_ElementEqualityFromListEquality_premise,
+          id="BLD_PET_ElementEqualityFromListEquality_premise"),
+    param(BLD_PET_EntailEverything_premise,
+          id="BLD_PET_EntailEverything_premise"),
+    param(BLD_PET_Equality_in_conclusion_1_premise,
+          id="BLD_PET_Equality_in_conclusion_1_premise"),
+    param(BLD_PET_Equality_in_conclusion_2_premise,
+          id="BLD_PET_Equality_in_conclusion_2_premise"),
+    param(BLD_PET_Equality_in_conclusion_3_premise,
+          id="BLD_PET_Equality_in_conclusion_3_premise"),
+    param(BLD_PET_Equality_in_condition_premise,
+          id="BLD_PET_Equality_in_condition_premise"),
+    param(BLD_PET_Factorial_Functional_premise,
+          id="BLD_PET_Factorial_Functional_premise"),
+    param(BLD_PET_Factorial_Relational_premise,
+          id="BLD_PET_Factorial_Relational_premise"),
+    param(BLD_PET_IRI_from_IRI_premise,
+          id="BLD_PET_IRI_from_IRI_premise"),
+    param(BLD_PET_Inconsistent_Entailment_premise,
+          id="BLD_PET_Inconsistent_Entailment_premise"),
+    param(BLD_PET_Individual_Data_Separation_Inconsistency_premise,
+          id="BLD_PET_Individual_Data_Separation_Inconsistency_premise"),
+    param(BLD_PET_ListConstantEquality_premise,
+          id="BLD_PET_ListConstantEquality_premise"),
+    param(BLD_PET_ListEqualityFromElementEquality_premise,
+          id="BLD_PET_ListEqualityFromElementEquality_premise"),
+    param(BLD_PET_ListLiteralEquality_premise,
+          id="BLD_PET_ListLiteralEquality_premise"),
+    param(BLD_PET_Multiple_IRIs_from_String_premise,
+          id="BLD_PET_Multiple_IRIs_from_String_premise"),
+    param(BLD_PET_Multiple_Strings_from_IRI_premise,
+          id="BLD_PET_Multiple_Strings_from_IRI_premise"),
+    param(BLD_PET_Named_Arguments_premise,
+          id="BLD_PET_Named_Arguments_premise"),
+    param(BLD_PET_RDF_Combination_Member_1_premise,
+          id="BLD_PET_RDF_Combination_Member_1_premise"),
+    param(BLD_PET_RDF_Combination_SubClass_4_premise,
+          id="BLD_PET_RDF_Combination_SubClass_4_premise"),
+    param(BLD_PET_RDF_Combination_SubClass_6_premise,
+          id="BLD_PET_RDF_Combination_SubClass_6_premise"),
+    param(BLD_PET_YoungParentDiscount_1_premise,
+          id="BLD_PET_YoungParentDiscount_1_premise"),
     param(PRD_PET_AssertRetract2_conclusion,
           id="PRD_PET_AssertRetract2_conclusion"),
     param(PRD_PET_AssertRetract2_premise,
