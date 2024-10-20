@@ -1,4 +1,7 @@
 """Pyparsing for EBNF of rif prd markup language.
+
+:TODO: ATOMIC(from documentation `https://www.w3.org/TR/2013/REC-rif-core-20130205/`_)
+    and ACTION_BLOCK seems to be the same. More documentation needed.
 """
 
 import pyparsing as pp
@@ -20,12 +23,15 @@ class my_exc(pp.ParseFatalException):
         raise cls(s, location, t[0])
 
     @classmethod
-    def raise_if(cls, identifier):
+    def raise_if(cls, identifier=pp.Regex(".+")):
         return identifier.setParseAction(cls._raise_this)
 
     @classmethod
     def capture_any(cls):
         return cls.raise_if(pp.Regex(".*"))
+
+class _exc_endofgroup(my_exc):
+    msg = "Expected group, rule or ')', got:"
 
 class _exc_rifprd(my_exc):
     msg = "This doesnt look like a rif-prd document. It must start "\
@@ -106,10 +112,14 @@ PROFILE = pp.Forward()
 Strategy = pp.Forward()
 Priority = pp.Forward()
 RULE = pp.Forward()
+Atomic = pp.Forward()
 Var = pp.Forward()
 Implies_PRD = pp.Forward()
 Implies_Core = pp.Forward()
+Implies_BLD = pp.Forward()
 ACTION_BLOCK = pp.Forward()
+ATOMIC = pp.Forward()
+
 Assert = pp.Forward()
 Retract = pp.Forward()
 Modify = pp.Forward()
@@ -161,7 +171,7 @@ Group <<= pp.Optional(IRIMETA) + pp.Suppress('Group')\
         + pp.Optional(Priority).set_results_name("Priority")\
         - pp.Suppress('(')\
         - pp.ZeroOrMore(RULE | Group).set_results_name("sentence")\
-        - pp.Suppress(')')
+        - (pp.Suppress(')') | _exc_endofgroup.raise_if(pp.Regex("[^)]+")))
 Group.set_parse_action(rif_container.Group._parse)
 #Strategy       ::= Const
 Strategy << Const
@@ -175,16 +185,19 @@ Forall = pp.Optional(IRIMETA) + pp.Suppress('Forall')\
         - RULE.set_results_name("formula")\
         - pp.Suppress(')'))
 Forall.set_parse_action(rif_container.Forall._parse)
-RULE << pp.MatchFirst((Forall, Implies_PRD, Implies_Core, ACTION_BLOCK))
+RULE << pp.MatchFirst((Forall, Implies_PRD, Implies_Core, ACTION_BLOCK, ATOMIC))
 
 #Implies_PRD        ::= IRIMETA? 'If' FORMULA 'Then' ACTION_BLOCK
 Implies_PRD << pp.Optional(IRIMETA) + pp.Suppress('If')\
         - FORMULA.set_results_name("Formula") - pp.Suppress('Then')\
         - ACTION_BLOCK.set_results_name("Actionblock")
 Implies_PRD.set_parse_action(rif_container.Implies._parse)
+
+#Implies_Core ::= IRIMETA? (ATOMIC | 'And' '(' ATOMIC* ')') ':-' FORMULA
 Implies_Core << pp.Optional(IRIMETA)\
         + ACTION_BLOCK.set_results_name("Actionblock") + pp.Suppress(':-')\
         - FORMULA.set_results_name("Formula")
+
 Implies_Core.set_parse_action(rif_container.Implies._parse)
 #LOCATOR        ::= ANGLEBRACKIRI
 LOCATOR << ANGLEBRACKIRI
@@ -195,11 +208,13 @@ PROFILE << ANGLEBRACKIRI
 
 #ACTION  ::= IRIMETA? (Assert | Retract | Modify | Execute )
 ACTION = Assert | Retract | Modify | Execute
-#Assert         ::= 'Assert' '(' IRIMETA? (Atom | Frame | Member) ')'
+
+# Assert ::= 'Assert' '(' IRIMETA? (Atom | Frame | Member) ')'
 Assert << pp.Optional(IRIMETA) + pp.Suppress('Assert') - pp.Suppress('(')\
         - (Atom | Frame | Member ) - pp.Suppress(')')
 Assert.set_parse_action(rif_container.Assert._parse)
-#Retract        ::= 'Retract' '(' ( IRIMETA? (Atom | Frame) | TERM | TERM TERM ) ')'
+
+# Retract ::= 'Retract' '(' ( IRIMETA? (Atom | Frame) | TERM | TERM TERM ) ')'
 Retract << pp.Optional(IRIMETA) + pp.Suppress('Retract') - pp.Suppress('(')\
         - pp.MatchFirst([Atom,
                          Frame,
@@ -208,6 +223,7 @@ Retract << pp.Optional(IRIMETA) + pp.Suppress('Retract') - pp.Suppress('(')\
                          _exc_retract.raise_if(pp.Regex(".+")),
                          ]).set_results_name("Target") - pp.Suppress(')')
 Retract.set_parse_action(rif_container.Retract._parse)
+
 #Modify         ::= 'Modify'  '(' IRIMETA? Frame ')'
 Modify << pp.Optional(IRIMETA) + pp.Suppress('Modify') - pp.Suppress('(')\
         - (Frame | _exc_modify.raise_if(pp.Regex(".+")))\
@@ -229,6 +245,7 @@ _DO_ACTION = pp.Optional(IRIMETA) + pp.Suppress("Do") + pp.Suppress("(")\
         - pp.OneOrMore(ACTION).set_results_name("Actions")\
         + pp.Suppress(')')
 _DO_ACTION.set_parse_action(rif_container.Do_action._parse)
+
 """
 :TODO: Why is irimeta possible before atom and frame in this context
 """
@@ -237,7 +254,11 @@ _AND_ACTION = pp.Optional(IRIMETA) + pp.Suppress('And') - pp.Suppress('(')\
         - pp.Suppress(')')
 ACTION_BLOCK << pp.MatchFirst((_DO_ACTION, _AND_ACTION, Atom, Frame))
 
-##Condition Language:
+# ATOMIC ::= IRIMETA? (Atom | Equal | Member | Subclass | Frame)
+ATOMIC << pp.Optional(IRIMETA)\
+        + pp.MatchFirst((Atom, Equal, Member, Subclass, Frame))
+
+# Condition Language:
 
 And_formula = pp.Optional(IRIMETA) + pp.Suppress('And') - pp.Suppress('(')\
         - pp.ZeroOrMore(FORMULA).set_results_name("Formulas")\
@@ -282,7 +303,7 @@ NEGATEDFORMULA << pp.Optional(IRIMETA) + pp.Suppress(pp.oneOf('Not', 'INEG'))\
         - pp.Suppress(')')
 NEGATEDFORMULA.set_parse_action(rif_container.negatedformula._parse)
 #Equal          ::= TERM '=' TERM
-Equal = pp.Optional(IRIMETA) + TERM.set_results_name("Left")\
+Equal << pp.Optional(IRIMETA) + TERM.set_results_name("Left") \
         + pp.Suppress('=') - TERM.set_results_name("Right")
 Equal.set_parse_action(rif_container.Equal._parse)
 #Member         ::= TERM '#' TERM
