@@ -64,5 +64,7 @@ class RIF(DefinedNamespace):
     New: URIRef
     INeg: URIRef
     Execute: URIRef
+    Name: URIRef
+    namedargs: URIRef
     _NS = Namespace("http://www.w3.org/2007/rif#")
     #_NS = Namespace("http://www.w3.org/2007/rif-builtin-predicate#")

@@ -394,11 +394,18 @@ class Uniterm(rif_element, MetaContainer):
             }
     attr_is_list = ["Args"]
 
-class Atom(Uniterm):
+class Atom_singles(Uniterm):
     type_suffix = "Atom"
 
 class Expr(Uniterm):
     type_suffix = "Expr"
+
+class Atom_slots(rif_element, MetaContainer):
+    type_suffix = "Atom"
+    attr_to_suffix = {
+            "Op": "op",
+            "slot": ""
+            }
 
 class Do_action(rif_element, MetaContainer):
     type_suffix = "Do"
