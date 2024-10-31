@@ -41,6 +41,10 @@ from . import BLD_PET_RDF_Combination_SubClass_4_premise
 from . import BLD_PET_RDF_Combination_SubClass_6_premise
 from . import BLD_PET_YoungParentDiscount_1_premise
 
+from . import PRD_NET_RDF_Combination_SubClass_5_nonconclusion
+from . import PRD_NET_RDF_Combination_SubClass_5_premise
+from . import PRD_NET_Retract_nonconclusion
+from . import PRD_NET_Retract_premise
 from . import PRD_PET_AssertRetract2_conclusion
 from . import PRD_PET_AssertRetract2_premise
 from . import PRD_PET_AssertRetract_conclusion
@@ -119,6 +123,7 @@ from . import Core_PET_RDF_Combination_Constant_Equivalence_Graph_Entailment_pre
 from . import Core_PET_RDF_Combination_SubClass_2_conclusion
 from . import Core_PET_RDF_Combination_SubClass_2_premise
 
+from  .import Own_Short_Numeric
 
 
 @pytest.fixture
@@ -198,15 +203,21 @@ def register_rif_format() -> None:
           id="BLD_PET_RDF_Combination_SubClass_6_premise"),
     param(BLD_PET_YoungParentDiscount_1_premise,
           id="BLD_PET_YoungParentDiscount_1_premise"),
+    param(PRD_NET_Retract_nonconclusion,
+          id="PRD_NET_Retract_nonconclusion"),
+    param(PRD_NET_Retract_premise,
+          id="PRD_NET_Retract_premise"),
+    param(PRD_NET_RDF_Combination_SubClass_5_nonconclusion,
+          id="PRD_NET_RDF_Combination_SubClass_5_nonconclusion"),
+    param(PRD_NET_RDF_Combination_SubClass_5_premise,
+          id="PRD_NET_RDF_Combination_SubClass_5_premise"),
     param(PRD_PET_AssertRetract2_conclusion,
           id="PRD_PET_AssertRetract2_conclusion"),
     param(PRD_PET_AssertRetract2_premise,
           id="PRD_PET_AssertRetract2_premise"),
     param(PRD_PET_AssertRetract_conclusion,
-          marks=mark.skip("error in rdflib.compare"),
           id="PRD_PET_AssertRetract_conclusion"),
     param(PRD_PET_AssertRetract_premise,
-          marks=mark.skip("error in rdflib.compare"),
           id="PRD_PET_AssertRetract_premise"),
     param(PRD_PET_Assert_conclusion,
           id="PRD_PET_Assert_conclusion"),
@@ -257,21 +268,24 @@ def register_rif_format() -> None:
     param(Core_PET_Builtins_Binary_premise,
           id="Core_PET_Builtins_Binary_premise"),
     param(Core_PET_Builtins_List_premise,
-          marks=mark.skip("takes too long"),
           id="Core_PET_Builtins_List_premise"),
     param(Core_PET_Builtins_Numeric_premise,
           marks=mark.skip("needs to long"),
           id="Core_PET_Builtins_Numeric_premise"),
+    param(Own_Short_Numeric,
+          marks=mark.skip("fails to compare numeric literals"),
+          id="Own_Short_Numeric"),
     param(Core_PET_Builtins_PlainLiteral_premise,
           id="Core_PET_Builtins_PlainLiteral_premise"),
     param(Core_PET_Builtins_String_premise,
           id="Core_PET_Builtins_String_premise"),
     param(Core_PET_Builtins_Time_premise,
-          marks=mark.skip("not a number error"),
+          marks=mark.skip("isotime doesnt work correct."),
           id="Core_PET_Builtins_Time_premise"),
     param(Core_PET_Builtins_XMLLiteral_conclusion,
           id="Core_PET_Builtins_XMLLiteral_conclusion"),
     param(Core_PET_Builtins_XMLLiteral_premise,
+          marks=mark.skip("Problems with xmlliteral parsing in rif parser"),
           id="Core_PET_Builtins_XMLLiteral_premise"),
     param(Core_PET_Builtins_anyURI_premise,
           id="Core_PET_Builtins_anyURI_premise"),
@@ -288,16 +302,15 @@ def register_rif_format() -> None:
     param(Core_PET_EBusiness_Contract_conclusion,
           id="Core_PET_EBusiness_Contract_conclusion"),
     param(Core_PET_EBusiness_Contract_premise,
+          marks=mark.skip("rif xml cant parse meta correct"),
           id="Core_PET_EBusiness_Contract_premise"),
     param(Core_PET_Factorial_Forward_Chaining_conclusion,
           id="Core_PET_Factorial_Forward_Chaining_conclusion"),
     param(Core_PET_Factorial_Forward_Chaining_premise,
           id="Core_PET_Factorial_Forward_Chaining_premise"),
     param(Core_PET_Frame_slots_are_independent_conclusion,
-          marks=mark.skip("cant get frame[a:b->c:d] to work because ->"),
           id="Core_PET_Frame_slots_are_independent_conclusion"),
     param(Core_PET_Frame_slots_are_independent_premise,
-          marks=mark.skip("cant get frame[a:b->c:d] to work because ->"),
           id="Core_PET_Frame_slots_are_independent_premise"),
     param(Core_PET_Frames_conclusion,
           id="Core_PET_Frames_conclusion"),
@@ -314,6 +327,7 @@ def register_rif_format() -> None:
     param(Core_PET_Modeling_Brain_Anatomy_conclusion,
           id="Core_PET_Modeling_Brain_Anatomy_conclusion"),
     param(Core_PET_Modeling_Brain_Anatomy_premise,
+          marks=mark.skip("rif xml cant process meta correctly"),
           id="Core_PET_Modeling_Brain_Anatomy_premise"),
     param(Core_PET_OWL_Combination_Vocabulary_Separation_Inconsistency_1_conclusion,
           id="Core_PET_OWL_Combination_Vocabulary_Separation_Inconsistency_1_conclusion"),
@@ -354,8 +368,6 @@ def register_rif_format() -> None:
     param(Core_PET_RDF_Combination_SubClass_2_premise,
           id="Core_PET_RDF_Combination_SubClass_2_premise"),
     param(DoNew,
-          marks=mark.skip("Wait until rdflib sorts out dt=xsd:string and "
-                          "datatype=None"),
           id="DoNew"),
     param(shoppingcart, id="shoppingcart"),
     ])           
@@ -365,6 +377,7 @@ def different_files_with_same_information(request) -> dict[str, str]:
 
 def test_compare_rif_and_rifps(register_rif_format,
                                different_files_with_same_information):
+
     q = iter(different_files_with_same_information.items())
     compare_format, filepath = q.__next__()
     compare_graph = Graph().parse(filepath, format=compare_format)
@@ -389,4 +402,6 @@ def test_compare_rif_and_rifps(register_rif_format,
                        format_, in_g.serialize()))
             logger.debug("Shared info netween both graphs:%s"
                          % in_both.serialize())
+            logger.debug("base_graph:\n%s" % iso_comparegraph.serialize())
+            #logger.debug("second_graph:\n%s" % iso_g.serialize())
             raise

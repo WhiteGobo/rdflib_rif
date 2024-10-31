@@ -1,0 +1,17 @@
+@prefix rif: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://example.org/example#NewCustomer> a rif:Do ;
+    rif:actionVar ( [ a rif:Var ;
+                rif:varname "X" ] [ a rif:New ] ) ;
+    rif:actions ( [ a rif:Assert ;
+                rif:target [ a rif:Member ;
+                        rif:class [ a rif:Const ;
+                                rif:constIRI "http://example.org/example#Customer"^^xsd:anyURI ] ;
+                        rif:instance [ a rif:Var ;
+                                rif:varname "X" ] ] ] ) .
+
+[] a rif:Document ;
+    rif:payload [ a rif:Group ;
+            rif:sentences ( <http://example.org/example#NewCustomer> ) ] .

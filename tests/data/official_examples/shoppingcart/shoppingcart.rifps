@@ -50,3 +50,4 @@ Group  (
                 Assert(?customer[ex1:status -> "New"]))))
  )
 )
+

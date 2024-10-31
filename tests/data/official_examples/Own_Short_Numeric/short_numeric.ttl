@@ -1,0 +1,33 @@
+@prefix rif: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a rif:Document ;
+    rif:payload [ a rif:Group ;
+            rif:sentences ( [ a rif:Implies ;
+                        rif:if [ a rif:And ;
+                                rif:formulas ( [ a rif:External ;
+                                            rif:content [ a rif:Atom ;
+                                                    rif:args ( [ a rif:Const ;
+                                                                rif:value 1.2e+34 ] ) ;
+                                                    rif:op [ a rif:Const ;
+                                                            rif:constIRI "http://www.w3.org/2007/rif-builtin-predicate#is-literal-double"^^xsd:anyURI ] ] ] [ a rif:External ;
+                                            rif:content [ a rif:Atom ;
+                                                    rif:args ( [ a rif:Const ;
+                                                                rif:value "-INF"^^xsd:float ] ) ;
+                                                    rif:op [ a rif:Const ;
+                                                            rif:constIRI "http://www.w3.org/2007/rif-builtin-predicate#is-literal-float"^^xsd:anyURI ] ] ] [ a rif:External ;
+                                            rif:content [ a rif:Atom ;
+                                                    rif:args ( [ a rif:Const ;
+                                                                rif:value 0e+00 ] [ a rif:External ;
+                                                                rif:content [ a rif:Expr ;
+                                                                        rif:args ( [ a rif:Const ;
+                                                                                    rif:value 1 ] [ a rif:Const ;
+                                                                                    rif:value 1 ] ) ;
+                                                                        rif:op [ a rif:Const ;
+                                                                                rif:constIRI "http://www.w3.org/2007/rif-builtin-function#numeric-subtract"^^xsd:anyURI ] ] ] ) ;
+                                                    rif:op [ a rif:Const ;
+                                                            rif:constIRI "http://www.w3.org/2007/rif-builtin-predicate#numeric-equal"^^xsd:anyURI ] ] ] ) ] ;
+                        rif:then [ a rif:Atom ;
+                                rif:op [ a rif:Const ;
+                                        rif:constIRI "http://example.org/example#ok"^^xsd:anyURI ] ] ] ) ] .

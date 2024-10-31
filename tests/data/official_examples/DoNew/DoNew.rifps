@@ -1,0 +1,9 @@
+Document(
+ Prefix(ex <http://example.org/example#>)
+
+ Group ( 
+  (* ex:NewCustomer *)Do ((?X New())
+      Assert (?X # ex:Customer)
+  )
+ )
+)

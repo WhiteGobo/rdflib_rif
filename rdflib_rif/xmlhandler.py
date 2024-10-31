@@ -174,6 +174,12 @@ class _Var(_default_node):
         self.parentnode.append_axiom((self.id, pred, value))
         return q
 
+class _Name(_state):
+    def __init__(self, typeof, **kwargs):
+        super().__init__(**kwargs)
+    def transition(self, trans, attrs):
+        raise ValueError("No transition for Name in rif specified")
+
 class _Const(_default_node):
     """
     :TODO: work over lang and datatype when, creating a literal
@@ -194,7 +200,7 @@ class _Const(_default_node):
             value = rdflib.Literal(content, datatype=_XSDNS.anyURI )
         elif str(const_type) in (str(_RIF.local), "rif:local"):
             pred = rdflib.URIRef(_RIF.constname)
-            value = rdflib.Literal(self.content, datatype=_XSDNS.string)
+            value = rdflib.Literal(self.content)
         elif str(const_type) == str(_RDF.PlainLiteral):
             pred = rdflib.URIRef(_RIF.value)
             content = str(self.content)
@@ -279,10 +285,17 @@ class _default_property(_state_with_axioms, _createnode_mixin):
         elif property_type == 3:
             slot_id = rdflib.BNode()
             self.parentnode.slots.append(slot_id)
-            key, value = self._targets
-            self.parentnode.append_axiom((slot_id, _RDF.type, _RIF.Slot))
-            self.parentnode.append_axiom((slot_id, _RIF.slotkey, key.id))
-            self.parentnode.append_axiom((slot_id, _RIF.slotvalue, value.id))
+            if p == _RIF.Atom:
+                key, value = self._targets
+                argname = Literal(key.content)
+                self.parentnode.append_axiom((slot_id, _RDF.type, _RIF.NamedArg))
+                self.parentnode.append_axiom((slot_id, _RIF.argname, argname))
+                self.parentnode.append_axiom((slot_id, _RIF.argvalue, value.id))
+            else:
+                key, value = self._targets
+                self.parentnode.append_axiom((slot_id, _RDF.type, _RIF.Slot))
+                self.parentnode.append_axiom((slot_id, _RIF.slotkey, key.id))
+                self.parentnode.append_axiom((slot_id, _RIF.slotvalue, value.id))
         else:
             for obj in self._targets:
                 self.parentnode.append_property(prop_type, obj.id)
@@ -396,6 +409,7 @@ class RIFXMLHandler(xml.sax.handler.ContentHandler):
         pass
 
 _createnode_mixin._special_states = {str(_RIF.Var): _Var,
+                                     str(_RIF.Name): _Name,
                                      str(_RIF.Const): _Const,
                                      str(_RIF.Document): _Document,
                                      }

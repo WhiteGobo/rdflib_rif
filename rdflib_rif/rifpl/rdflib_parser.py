@@ -34,21 +34,23 @@ class RIFMarkupParser(rdflib.parser.Parser):
         inputstr = stream.read()
         if isinstance(inputstr, bytes):
             inputstr = inputstr.decode("utf8")
-        q = parser.parse_rifpl(inputstr)
-        logger.debug("ASDF:\n%s" % q)
+        graph = parser.parse_rifpl(inputstr)
         #q = parser.parse_rifpl(stream)
-        xmlbytes = ET.tostring(q.as_xml())
-        if pretty_logging:
-            pretty = _minidom.parseString(xmlbytes).toprettyxml(indent='  ')
-            logger.debug("Created rif from rifps:\n%s" %(pretty))
-        else:
-            logger.debug("Created rif from rifps: %s" %(xmlbytes))
-        rif_stream = io.BytesIO(xmlbytes)
-        try:
-            self.rif_to_ttl(rif_stream, sink)
-        except Exception:
-            if _minidom is not None:
-                xmlstr = ET.tostring(q.as_xml())
-                pretty = _minidom.parseString(xmlstr).toprettyxml(indent='  ')
-                logger.warning(pretty)
-            raise
+        for ax in graph:
+            sink.add(ax)
+        return
+        #xmlbytes = ET.tostring(q.as_xml())
+        #if pretty_logging:
+        #    pretty = _minidom.parseString(xmlbytes).toprettyxml(indent='  ')
+        #    logger.debug("Created rif from rifps:\n%s" %(pretty))
+        #else:
+        #    logger.debug("Created rif from rifps: %s" %(xmlbytes))
+        #rif_stream = io.BytesIO(xmlbytes)
+        #try:
+        #    self.rif_to_ttl(rif_stream, sink)
+        #except Exception:
+        #    if _minidom is not None:
+        #        xmlstr = ET.tostring(q.as_xml())
+        #        pretty = _minidom.parseString(xmlstr).toprettyxml(indent='  ')
+        #        logger.warning(pretty)
+        #    raise

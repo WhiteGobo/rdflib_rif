@@ -15,7 +15,7 @@ Document(
   If 
       Not( ex:John[ex:status -> "normal"] )
   Then Do ( 
-      Assert  (ex:John[ex:status -> "unkown"])
+      Assert  (ex:John[ex:status -> "unknown"])
   )
 
   ex:John[ex:status -> "normal" ex:discount -> "10"]

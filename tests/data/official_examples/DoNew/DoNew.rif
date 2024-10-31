@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Document xmlns="http://www.w3.org/2007/rif#">
+  <payload>
+    <Group>
+      <sentence>
+        <Do>
+          <actions ordered="yes">
+            <Assert>
+              <target>
+                <Member>
+                  <instance><Var>X</Var></instance>
+                  <class>
+                    <Const type="&rif;iri">http://example.org/example#Customer</Const>
+                  </class>
+                </Member>
+              </target>
+            </Assert>
+          </actions>
+        </Do>
+      </sentence>
+    </Group>
+  </payload>
+</Document>

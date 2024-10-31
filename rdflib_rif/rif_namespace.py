@@ -1,5 +1,6 @@
 from rdflib.namespace import DefinedNamespace, Namespace
 from rdflib.term import URIRef
+from rdflib import XSD
 
 class RIF(DefinedNamespace):
     _fail = True
@@ -66,5 +67,26 @@ class RIF(DefinedNamespace):
     Execute: URIRef
     Name: URIRef
     namedargs: URIRef
+    NamedArg: URIRef
+    argname: URIRef
+    argvalue: URIRef
     _NS = Namespace("http://www.w3.org/2007/rif#")
     #_NS = Namespace("http://www.w3.org/2007/rif-builtin-predicate#")
+
+
+# see `https://www.w3.org/TR/2013/REC-rif-dtb-20130205/#The_Base_and_Prefix_Directives`_
+FUNC = Namespace("http://www.w3.org/2007/rif-builtin-function#")
+PRED = Namespace("http://www.w3.org/2007/rif-builtin-predicate#")
+# see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/#Built-in_functions.2C_predicates_and_actions`_
+ACT = Namespace("http://www.w3.org/2007/rif-builtin-action#")
+
+rif_namespaces = {
+        # see `https://www.w3.org/TR/2013/REC-rif-dtb-20130205/#The_Base_and_Prefix_Directives`_
+        "xs": XSD,
+        "rif": RIF,
+        "func": FUNC,
+        "pred": PRED,
+        # see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/#Built-in_functions.2C_predicates_and_actions`_
+        "act": ACT,
+        }
+"""dict: Namespaces expected in a rif document."""

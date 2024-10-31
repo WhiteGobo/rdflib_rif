@@ -2,13 +2,39 @@
 
 :TODO: ATOMIC(from documentation `https://www.w3.org/TR/2013/REC-rif-core-20130205/`_)
     and ACTION_BLOCK seems to be the same. More documentation needed.
+
+All basic building blocks are:  `ANGLEBRACKIRI`, `CURIE`, `Const`,
+`CONSTSHORT`, `Name`, `NCName`.
 """
 
 import pyparsing as pp
 from pyparsing import pyparsing_common as _pp_common
 import abc
+import re
+import rdflib
+from rdflib import URIRef, Literal, RDF
+from rdflib.compat import decodeUnicodeEscape
 import typing as typ
-from . import container as rif_container
+from .container import complete_object, ObjVar, ObjNew, MetaObject,\
+        ObjMember, ObjEqual, ObjSubclass, \
+        ObjPrefix, ObjSlot, ObjName, ObjNamedArg,\
+        ObjFrame, ObjAtom, ObjExpr, _ObjList,\
+        ObjConstIRI, ObjConstValue, ObjConstLiteral, ObjConstBlankNode,\
+        ObjExternal, ObjExists, ObjNotFormula,\
+        ObjAssert, ObjRetract, ObjModify, ObjExecute, ObjDo, _ObjRetractSlot,\
+        ObjAndAction,\
+        ObjAndFormula, ObjOrFormula,\
+        ObjImpliesCore, ObjImpliesPRD, ObjForall,\
+        ObjDocument, ObjGroup, ObjImport,\
+        createLocalIri, curieToIri
+
+from ..rif_namespace import XSD
+
+_DEBUG = False
+"""bool: setting if debug is enabled. Currently only usable for development"""
+
+def _mask(expr: "ParserElement"):
+    return pp.MatchFirst([expr])
 
 def _suppr(expr : "ParserElement | str"):
     return pp.Suppress(expr).set_name(str(expr))
@@ -61,401 +87,553 @@ class _exc_rule(my_exc):
 class _exc_meta(my_exc):
     msg = "Meta expects (<iri>, And(...), '*)'), got:"
 
-## rule language:
-
-#ANGLEBRACKIRI ::= IRI_REF
-#CURIE         ::= PNAME_LN | PNAME_NS
-#CONSTSHORT    ::= ANGLEBRACKIRI // shortcut for "..."^^rif:iri
-#              | CURIE          // shortcut for "..."^^rif:iri
-#              | '"' UNICODESTRING '"'// shortcut for "..."^^xs:string
-#              | NumericLiteral // shortcut for "..."^^xs:integer,xs:decimal,xs:double
-#              | '_' NCName     // shortcut for "..."^^rif:local
-#              | '"' UNICODESTRING '"' '@' langtag  // shortcut for "...@..."^^rdf:PlainLiteral
-from rdflib.plugins.sparql.parser import PNAME_LN, PNAME_NS, IRIREF, LANGTAG, String, VARNAME, String
+from rdflib.plugins.sparql.parser import IRIREF, String, VARNAME, String, LANGTAG
 import rdflib.plugins.sparql.parser as _rdflib_sparql_parser
 
-iri = _rdflib_sparql_parser.iri.copy()
-iri.set_name("iri")
-iri.add_parse_action(rif_container.Const_shortenediri._parse)
-localiri = pp.Forward()
-localiri.set_name("localiri")
+## BASIC building blocks
 
-External_iri = _rdflib_sparql_parser.iri.copy()
-External_iri.add_parse_action(rif_container.External_Const_shortenediri._parse)
-External_iri.set_name("external_iri")
-literal = _rdflib_sparql_parser.RDFLiteral.copy()
-literal.set_name("Literal")
-literal.add_parse_action(rif_container.literal._parse)
-#literal.add_parse_action(rif_container.Const_withlang._parse)
-NumericLiteral = _rdflib_sparql_parser.NumericLiteral.copy()
-NumericLiteral.add_parse_action(rif_container.literal._parse)
-NumericLiteral.set_name("NumericLiteral")
+class RIFPSParser:
+    def __init__(self, loglevel: int =0):
+        self._parser = self.__create_parser()
 
-ANGLEBRACKIRI = IRIREF
-CURIE = PNAME_LN | PNAME_NS
-#UNICODESTRING = # something like "asdf" not "'asdf'"
-#_CONSTSHORT_WTIH_LANGTAG = "asdf"@en
-_CONSTRSHORT_WITH_LANGTAG = pp.Combine(String + LANGTAG)
-_CONSTRSHORT_WITH_LANGTAG.set_parse_action(rif_container.Const_withlang._parse)
-CONSTSHORT = iri | NumericLiteral | localiri | literal#_CONSTRSHORT_WITH_LANGTAG
+    def parseString(self, inputstring: str):
+        return self._parser.parseString(inputstring)
 
-"""
-:TODO: Im not sure why '_'. It might be representative for local iris(BNode).
-"""
-NCName = VARNAME.copy().set_name("NCName")
+    def _create_NumericLiteral(self):
+        #from rdflib.plugins.sparql.parser import NumericLiteral 
+        INTEGER = pp.Regex(r"[+-]?[0-9]+")
+        INTEGER.setParseAction(lambda x: rdflib.Literal(x[0], datatype=rdflib.XSD.integer))
 
-_IRI = pp.Regex(r'[^<>"{}|^`\\%s]*'
-                % "".join("\\x%02X" % i for i in range(33)))
-IRICONST = pp.Combine(_suppr("\"") + _IRI + _suppr("\""))\
-        | pp.Combine(_suppr("\'") + _IRI + _suppr("\'"))
-IRICONST.set_name("IRI")
-""" copied from rdflib.plugins.sparql.parser.IRIREF"""
-Const = CONSTSHORT.copy().set_name("Const")
+        DECIMAL = pp.Regex(r"[+-]?[0-9]*\.[0-9]+")  # (?![eE])
+        DECIMAL.setParseAction(lambda x: rdflib.Literal(x[0], datatype=rdflib.XSD.decimal))
 
-IRIMETA = pp.Forward()
-IRIMETA.set_name("IRIMETA ::= '(*' iri? {And_frame | Frame_nometa}?'*)'")
-Base = pp.Forward()
-Prefix = pp.Forward()
-Import = pp.Forward()
-Group = pp.Forward()
-Name = NCName
-LOCATOR = pp.Forward()
-PROFILE = pp.Forward()
-Strategy = pp.Forward()
-Priority = pp.Forward()
-RULE = pp.Forward()
-Atomic = pp.Forward()
-Var = pp.Forward()
-Var.set_name("Var")
-Forall = pp.Forward().set_name("Forall")
-Implies_PRD = pp.Forward()
-Implies_PRD.set_name("Implies(PRD)")
-Implies_Core = pp.Forward()
-Implies_Core.set_name("Implies(Core)")
-ACTION_BLOCK = pp.Forward()
-ATOMIC = pp.Forward()
-ATOMIC.set_name("ATOMIC")
+        EXPONENT_re = "[eE][+-]?[0-9]+"
+        DOUBLE = pp.Regex(r"[+-]?[0-9]+\.[0-9]*%(e)s|\.([0-9])+%(e)s|[0-9]+%(e)s" % {"e": EXPONENT_re})
+        DOUBLE.setParseAction(lambda x: rdflib.Literal(x[0], datatype=rdflib.XSD.double))
 
-Assert = pp.Forward()
-Retract = pp.Forward()
-Modify = pp.Forward()
-Execute = pp.Forward()
-Frame = pp.Forward()
-Member = pp.Forward()
-Member.set_name("Member")
+        NumericLiteral = DOUBLE | DECIMAL | INTEGER
+        return NumericLiteral.set_name("NumericLiteral")
 
-List = pp.Forward()
-External_term = pp.Forward()
-Expr = pp.Forward()
-Expr.set_name("Expr ::= IRIMETA? External_iri '(' TERM* ')'")
-TERM = pp.MatchFirst((Expr, Const, Var, List, External_term))
-TERM.set_name("TERM ::= Expr | Const | Var | List | External_term")
+    def _create_curie(self):
+        PN_CHARS_BASE_re = "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\U00010000-\U000EFFFF"
+        PERCENT_re = "%[0-9a-fA-F]{2}"
+        PN_LOCAL_ESC_re = "\\\\[_~\\.\\-!$&\"'()*+,;=/?#@%]"
+        PLX_re = "(%s|%s)" % (PN_LOCAL_ESC_re, PERCENT_re)
+        PN_CHARS_U_re = "_" + PN_CHARS_BASE_re
+        PN_CHARS_re = "\\-0-9\u00B7\u0300-\u036F\u203F-\u2040" + PN_CHARS_U_re
 
-# UNITERM        ::= (IRIMETA? Const) '(' (TERM* ')'
-#UNITERM = pp.Optional(IRIMETA) + Const.set_results_name("Op")\
-#        + _suppr('(') + (pp.ZeroOrMore(named_arg) | pp.ZeroOrMore(TERM).set_results_name("Args"))\
-#        + _suppr(')')
-#UNITERM.set_name("Const (TERM* | {Name -> TERM}*)")
-Atom_singles = pp.Optional(IRIMETA) + Const.set_results_name("Op")\
-        + _suppr('(') + pp.ZeroOrMore(TERM).set_results_name("Args")\
-        + _suppr(')')
-named_arg = Name + _suppr("->") + TERM
-named_arg.set_parse_action(rif_container.Slot._parse)
-Atom_slots = pp.Optional(IRIMETA) + Const.set_results_name("Op")\
-        + _suppr('(') + pp.ZeroOrMore(named_arg).set_results_name("slot")\
-        + _suppr(')')
+        PN_PREFIX = pp.Regex(
+                "[%s](?:[%s\\.]*[%s])?" % (PN_CHARS_BASE_re, PN_CHARS_re, PN_CHARS_re), flags=re.U
+                )
+        PNAME_NS = pp.Combine(pp.Optional(PN_PREFIX) + pp.Suppress(":"))\
+                .set_name("PNAME_NS")
+        start_char = f"([{PN_CHARS_U_re}s:0-9]|{PLX_re}s)"
+        mid_char = f"([{PN_CHARS_re}s\\.:]|{PLX_re}s)"
+        end_char = f"([{PN_CHARS_re}s:]|{PLX_re}s)".replace("\\-", "")
 
-Atom = Atom_singles ^ Atom_slots
-Atom.set_name("Atom")
-Atom_singles.set_parse_action(rif_container.Atom_singles._parse)
-Atom_slots.set_parse_action(rif_container.Atom_slots._parse)
+        PN_LOCAL = pp.Regex("%s(%s*%s)?" % (start_char, mid_char, end_char),
+                            flags=re.X | re.UNICODE,
+                            ).set_name("PNLOCAL")
 
-NEGATEDFORMULA = pp.Forward()
-NEGATEDFORMULA.set_name("NEGATEDFORMULA")
-Equal = pp.Forward()
-Equal.set_name("Equal")
-Subclass = pp.Forward()
-GROUNDTERM = pp.Forward()
-External_formula = pp.Forward()
-External_formula.set_name("External_formula")
-New = pp.Optional(IRIMETA) + _suppr("New") - _suppr("(")\
-        + _suppr(")")
-New.set_parse_action(rif_container.New)
-FORMULA = pp.Forward()
+        CURIE = (PNAME_NS + pp.Optional(PN_LOCAL))\
+                .set_name("CURIE")\
+                .set_parse_action(curieToIri)
+        """: shortend iri (eg `ex:suffix`) """
+        return CURIE
 
-# Document       ::= IRIMETA? 'Document' '(' Base? Prefix* Import* Group? ')'
-Document = pp.Optional(IRIMETA).set_results_name("Meta")\
-        + _suppr('Document')\
-        - _suppr('(')\
-        + pp.Optional(Base).set_results_name("Base")\
-        + pp.ZeroOrMore(Prefix).set_results_name("Prefixes")\
-        + pp.ZeroOrMore(Import).set_results_name("directive")\
-        + pp.Optional(Group).set_results_name("payload")\
-        + _suppr(')')
-Document.set_parse_action(rif_container.Document._parse)
+    def _create_anglebrackiri(self):
+        body = pp.Regex(r'[^<>"{}|^`\\%s]*'
+                        % "".join("\\x%02X" % i for i in range(33)))
+        ANGLEBRACKIRI = pp.Combine(_suppr("<") - body + _suppr(">"))\
+                .set_name("ANGLEBRACKIRI")\
+                .set_parse_action(lambda x: rdflib.URIRef(x[0]))
+        """: full iri. Same as `rdflib.plugins.sparql.parser.IRIREF`
+        see `https://www.w3.org/TR/rdf-sparql-query/#rIRI_REF`_
+        """
+        return ANGLEBRACKIRI
 
-# Base           ::= 'Base' '(' ANGLEBRACKIRI ')'
-Base <<= _suppr('Base') - _suppr('(') - ANGLEBRACKIRI\
-        - _suppr(')')
+    def _create_iriconst(self):
+        return self._create_anglebrackiri() | self._create_curie()
 
-# Prefix         ::= 'Prefix' '(' Name ANGLEBRACKIRI ')'
-Prefix <<= _suppr('Prefix') - _suppr('(')\
-        - Name - ANGLEBRACKIRI  - _suppr(')')
-Prefix.set_parse_action( lambda x: tuple(x) )
+    def _create_literal_parser(self):
+        _tmp = lambda x: rdflib.Literal(decodeUnicodeEscape(x[0]))
+        STRING_LITERAL_LONG1 = pp.Combine(
+                _suppr("'''")\
+                + pp.Regex("(?:(?:'|'')?(?:[^'\\\\]|\\\\['ntbrf\\\\]))*")\
+                + _suppr("'''"))\
+                .setParseAction(_tmp)
 
-# Import ::= IRIMETA? 'Import' '(' LOCATOR PROFILE? ')'
-Import <<= pp.Optional(IRIMETA) + _suppr('Import') + _suppr('(')\
-        + LOCATOR.set_results_name("Location")\
-        + pp.Optional(PROFILE).set_results_name("Profile") + _suppr(')')
-Import.set_parse_action(rif_container.Import._parse)
+        STRING_LITERAL_LONG2 = pp.Combine(
+                _suppr('"""')\
+                + pp.Regex('(?:(?:"|"")?(?:[^"\\\\]|\\\\["ntbrf\\\\]))*')\
+                + _suppr('"""'))\
+                .setParseAction(_tmp)
 
-# Group ::= IRIMETA? 'Group' Strategy? Priority? '(' (RULE | Group)* ')'
-Group <<= pp.Optional(IRIMETA) + _suppr('Group')\
-        + pp.Optional(Strategy).set_results_name("Strategy")\
-        + pp.Optional(Priority).set_results_name("Priority")\
-        - _suppr('(')\
-        - pp.ZeroOrMore(RULE | Group).set_results_name("sentence")\
-        - (_suppr(')') | _exc_endofgroup.raise_if(pp.Regex("[^)]+")))
-Group.set_parse_action(rif_container.Group._parse)
+        STRING_LITERAL1 = pp.Combine(\
+                _suppr("'")\
+                + pp.Regex("(?:[^'\\n\\r\\\\]|\\\\['ntbrf\\\\])*", flags=re.U)\
+                + _suppr("'"))\
+                .setParseAction(_tmp)
 
-# Strategy ::= Const
-Strategy <<= Const
+        STRING_LITERAL2 = pp.Combine(\
+                _suppr('"')\
+                + pp.Regex('(?:[^"\\n\\r\\\\]|\\\\["ntbrf\\\\])*', flags=re.U)\
+                + _suppr('"'))\
+                .setParseAction(_tmp)
 
-#Priority       ::= Const
-Priority <<= Const
-such_that_FORMULA = _suppr('such that') - pp.OneOrMore(FORMULA)
-Forall <<= pp.Optional(IRIMETA) + _suppr('Forall')\
-        - (pp.OneOrMore(Var).set_results_name("declare")\
-        + pp.Optional(such_that_FORMULA).set_results_name("pattern")\
-        + _suppr('(')\
-        - RULE.set_results_name("formula")\
-        + _suppr(')'))
-Forall.set_parse_action(rif_container.Forall._parse)
-RULE <<= pp.MatchFirst((Forall, Implies_PRD, Implies_Core, ACTION_BLOCK, ATOMIC))
+        LANGTAG = pp.Combine(_suppr("@")\
+                + pp.Regex("[a-zA-Z]+(?:-[a-zA-Z0-9]+)*"))
+        OPT_LANGTAG = pp.Optional(LANGTAG, default=None)
+        TYPETAG = pp.Combine(_suppr("^^") + self._create_iriconst())\
+                .set_results_name("datatype")
+        OPT_TYPETAG = pp.Optional(TYPETAG, default=None)
+                                 
+        literal = STRING_LITERAL_LONG1 | STRING_LITERAL_LONG2\
+                | STRING_LITERAL1 | STRING_LITERAL2
+        return pp.Combine(literal.set_results_name("lexical_or_value")\
+                + pp.Optional(LANGTAG.set_results_name("lang")
+                              | TYPETAG.set_results_name("datatype")))\
+                .set_parse_action(ObjConstLiteral._parse_pyparsing)\
+                .set_name("LANGLITERAL")
 
-#Implies_PRD        ::= IRIMETA? 'If' FORMULA 'Then' ACTION_BLOCK
-Implies_PRD <<= pp.Optional(IRIMETA) + _suppr('If')\
-        - FORMULA.set_results_name("Formula") - _suppr('Then')\
-        - ACTION_BLOCK.set_results_name("Actionblock")
-Implies_PRD.set_parse_action(rif_container.Implies._parse)
+    def __create_parser(self, loglevel: int = 0) -> "PyParser":
+        ANGLEBRACKIRI = IRIREF.copy().set_name("ANGLEBRACKIRI")
+        """: full iri. Same as `rdflib.plugins.sparql.parser.IRIREF`
+        see `https://www.w3.org/TR/rdf-sparql-query/#rIRI_REF`_
+        """
+        ANGLEBRACKIRI.set_name("ANGLEBRACKIRI")
 
-#Implies_Core ::= IRIMETA? (ATOMIC | 'And' '(' ATOMIC* ')') ':-' FORMULA
-Implies_Core <<= pp.Optional(IRIMETA)\
-        + ACTION_BLOCK.set_results_name("Actionblock")\
-        + _suppr(':-')\
-        - FORMULA.set_results_name("Formula")
+        CURIE = self._create_curie()
 
-Implies_Core.set_parse_action(rif_container.Implies._parse)
-#LOCATOR        ::= ANGLEBRACKIRI
-LOCATOR <<= ANGLEBRACKIRI
-#PROFILE        ::= ANGLEBRACKIRI
-PROFILE <<= ANGLEBRACKIRI
+        NCName = VARNAME.copy().set_name("NCName")
+        """:Namespace name
+        see `https://www.w3.org/TR/2006/REC-xml-names11-20060816/#NT-NCName`_
+        """
 
-#Action Language:
+        Name = NCName.copy()
+        """:arbitrary Name
+        see `https://www.w3.org/TR/rif-core/#Terms_of_RIF-Core`_
+        :TODO: missing '"' UNICODESTRING '"'
+        """
 
-#ACTION  ::= IRIMETA? (Assert | Retract | Modify | Execute )
-ACTION = Assert | Retract | Modify | Execute
-
-# Assert ::= 'Assert' '(' IRIMETA? (Atom | Frame | Member) ')'
-Assert <<= pp.Optional(IRIMETA) + _suppr('Assert') - _suppr('(')\
-        - (Atom | Frame | Member ) - _suppr(')')
-Assert.set_parse_action(rif_container.Assert._parse)
-
-# Retract ::= 'Retract' '(' ( IRIMETA? (Atom | Frame) | TERM | TERM TERM ) ')'
-Retract <<= pp.Optional(IRIMETA) + _suppr('Retract') - _suppr('(')\
-        - pp.MatchFirst([Atom,
-                         Frame,
-                         TERM + TERM,
-                         TERM,
-                         _exc_retract.raise_if(pp.Regex(".+")),
-                         ]).set_results_name("Target") - _suppr(')')
-Retract.set_parse_action(rif_container.Retract._parse)
-
-#Modify         ::= 'Modify'  '(' IRIMETA? Frame ')'
-Modify <<= pp.Optional(IRIMETA) + _suppr('Modify') - _suppr('(')\
-        - (Frame | _exc_modify.raise_if(pp.Regex(".+")))\
-        .set_results_name("Target")\
-        - _suppr(')')
-Modify.set_parse_action(rif_container.Modify._parse)
-#Execute        ::= 'Execute' '(' IRIMETA? Atom ')' 
-Execute <<= pp.Optional(IRIMETA) + _suppr('Execute') - _suppr('(')\
-        - Atom.set_results_name("Target") - _suppr(')')
-Execute.set_parse_action(rif_container.Execute._parse)
-#Execute.set_parse_action(rif_container.notImpl)
-#ACTION_BLOCK   ::= IRIMETA? ('Do (' ('(' IRIMETA? Var IRIMETA? (Frame | 'New()') ')')* ACTION+  ')' |
-#                 'And (' ( IRIMETA? (Atom | Frame) )* ')' | Atom | Frame)
-_VAR_INIT_SLOT = _suppr('(') + Var + (Frame | New)\
-        + _suppr(')')
-_VAR_INIT_SLOT.set_parse_action(rif_container.Var_init_slot._parse)
-_DO_ACTION = pp.Optional(IRIMETA) + _suppr("Do") + _suppr("(")\
-        - pp.ZeroOrMore(_VAR_INIT_SLOT).set_results_name("Vars")\
-        - pp.OneOrMore(ACTION).set_results_name("Actions")\
-        + _suppr(')')
-_DO_ACTION.set_parse_action(rif_container.Do_action._parse)
-_DO_ACTION.set_name("DO")
-
-"""
-:TODO: Why is irimeta possible before atom and frame in this context
-"""
-_AND_ACTION = pp.Optional(IRIMETA) + _suppr('And') - _suppr('(')\
-        - pp.ZeroOrMore((Atom | Frame))\
-        - _suppr(')')
-ACTION_BLOCK <<= pp.MatchFirst((_DO_ACTION, _AND_ACTION, ATOMIC, Atom, Frame))
-ACTION_BLOCK.set_name("ACTION_BLOCK")
-
-# ATOMIC ::= IRIMETA? (Atom | Equal | Member | Subclass | Frame)
-ATOMIC <<= pp.Optional(IRIMETA)\
-        + pp.Or((Equal, Subclass | Member, Frame, Atom))
-
-# Condition Language:
-
-And_formula = pp.Optional(IRIMETA) + _suppr('And') - _suppr('(')\
-        - pp.ZeroOrMore(FORMULA).set_results_name("Formulas")\
-        - _suppr(')')
-And_formula.set_parse_action(rif_container.And_formula._parse)
-And_formula.set_name("And(formula)")
-Or = pp.Optional(IRIMETA) + _suppr('Or') + _suppr('(')\
-        + pp.ZeroOrMore(FORMULA).set_results_name("Formulas")\
-        + _suppr(')')
-Or.set_parse_action(rif_container.Or_formula._parse)
-Or.set_name("Or")
-Exists = pp.Optional(IRIMETA) + _suppr('Exists')\
-        + pp.OneOrMore(Var).set_results_name("Vars")\
-        + _suppr('(') + FORMULA.set_results_name("Formulas")\
-        + _suppr(')')
-Exists.set_parse_action(rif_container.Exists._parse)
-Exists.set_name("Exists")
-External_formula <<= pp.Optional(IRIMETA) + _suppr('External')\
-        + _suppr('(')\
-        + Atom\
-        + _suppr(')')
-External_formula.set_parse_action(rif_container.External_formula._parse)
-"""
-:TODO: This might be incorrect. For :term:`external defined atomic formulas`
-    this is correct, but for :term:`atomic formulas` it might be valid
-    with exactly one arg
-"""
-Expr <<= pp.Optional(IRIMETA) + External_iri.set_results_name("Op")\
-        + _suppr('(') - pp.ZeroOrMore(TERM).set_results_name("Args")\
-        - _suppr(')')
-Expr.set_parse_action(rif_container.Expr._parse)
-
-#GROUNDUNITERM  ::= (IRIMETA? Const) '(' (GROUNDTERM* ')'
-GROUNDUNITERM = (pp.Optional(IRIMETA) + Const) + _suppr('(')\
-        + pp.ZeroOrMore(GROUNDTERM) + _suppr(')')
-
-#NEGATEDFORMULA ::= 'Not' '(' FORMULA ')' | 'INeg' '(' FORMULA ')' 
-NEGATEDFORMULA <<= pp.Optional(IRIMETA) + _suppr(pp.oneOf('Not', 'INEG'))\
-        - _suppr('(') - FORMULA.set_results_name("Formula")\
-        - _suppr(')')
-NEGATEDFORMULA.set_parse_action(rif_container.negatedformula._parse)
-
-#Equal          ::= TERM '=' TERM
-Equal <<= pp.Optional(IRIMETA) + TERM.set_results_name("Left") \
-        + _suppr('=') - TERM.set_results_name("Right")
-Equal.set_parse_action(rif_container.Equal._parse)
-
-#Member         ::= TERM '#' TERM
-Member <<= pp.Optional(IRIMETA) + TERM.set_results_name("instance")\
-        + _suppr('#') - TERM.set_results_name("class")
-Member.set_parse_action(rif_container.Member._parse)
-
-#Subclass       ::= TERM '##' TERM
-Subclass <<= pp.Optional(IRIMETA) + TERM.set_results_name("sub")\
-        + _suppr('##') - TERM.set_results_name("super")
-Subclass.set_parse_action(rif_container.Subclass._parse)
-Subclass.set_name("Subclass")
-
-#Frame          ::= TERM '[' (TERM '->' TERM)* ']'
-_Frame_slot = TERM + _suppr('->') + TERM
-_Frame_slot.set_parse_action(rif_container.Slot._parse)
-Frame <<= pp.Optional(IRIMETA) + TERM.set_results_name("object")\
-        + _suppr('[')\
-        - pp.OneOrMore(_Frame_slot).set_results_name("slot")\
-        - _suppr(']')
-Frame.set_parse_action(rif_container.Frame._parse)
-Frame.set_name("Frame")
-Frame_nometa = TERM.set_results_name("object")\
-        + _suppr('[')\
-        - pp.OneOrMore(_Frame_slot).set_results_name("slot")\
-        - _suppr(']')
-Frame_nometa.set_parse_action(rif_container.Frame._parse)
-
-#TERM           ::= IRIMETA? (Const | Var | List | 'External' '(' Expr ')')
-External_term <<= pp.Optional(IRIMETA) + pp.MatchFirst((Const, Var, List, _suppr('External')))\
-        + _suppr('(')\
-        - Expr\
-        - _suppr(')')
-External_term.set_parse_action(rif_container.External_formula._parse)
-External_groundterm = pp.Optional(IRIMETA) + _suppr('External')\
-        - _suppr('(')\
-        - GROUNDUNITERM.set_results_name("Content")\
-        - _suppr(')')
-GROUNDTERM = Const | List | External_groundterm
-List <<= pp.Optional(IRIMETA) + _suppr('List') - _suppr('(')\
-        - pp.ZeroOrMore(GROUNDTERM).set_results_name("Items")\
-        - _suppr(')')
-List.set_parse_action(rif_container.List._parse)
-List.set_name("List ::= IRIMETA? 'List(' GROUNDTERM* ')'")
-Var <<= pp.Optional(IRIMETA)\
-        + pp.Combine(_suppr('?') - Name.set_results_name("text"))
-Var.set_parse_action(rif_container.Var._parse)
-
-localiri <<= pp.Combine(_suppr('_') - Name.set_results_name("text"))
-localiri.set_parse_action(rif_container.LocalIri._parse)
-
-##Annotations:
-
-#IRIMETA        ::= '(*' IRICONST? (Frame | 'And' '(' Frame* ')')? '*)'
-And_frame = _suppr('And') - _suppr('(') - pp.ZeroOrMore(Frame)\
-        - _suppr(')')
-And_frame.set_name("And(frame)")
-IRIMETA <<= _suppr('(*')\
-        + pp.Optional(iri).set_results_name("iri")\
-        + pp.Optional(pp.MatchFirst((And_frame, Frame_nometa))).set_results_name("config")\
-        - _suppr('*)')
-"""
-:TODO: needed to replace iriconst with rdflib...iri . Please check
-:TODO: This doesnt work (* ex:frame[] *)
-"""
-
-RIFPRD_PS = Document | Group | Forall | Implies_PRD | Implies_Core\
-        | Assert | Retract\
-        | Modify | And_formula | Exists\
-        | Equal\
-        | Subclass | Atom | Frame | Member\
-        | _exc_rifprd.raise_if(pp.Regex(".+"))
-"""This should contain all possible Things with metadata. It is used, when
-parsing arbitrary data in RIFPRD-PS.
-"""
-
-FORMULA <<= pp.MatchFirst((And_formula,
-                          Or,
-                          Exists,
-                          NEGATEDFORMULA,
-                          Equal,
-                          External_formula,
-                          Atom,
-                          Frame,
-                          Member,
-                          Subclass,
-                          ))
+        IRICONST = self._create_iriconst().set_name("IRICONST")\
+                .set_results_name("constIRI")\
+                .set_parse_action(ObjConstIRI._parse_pyparsing)
+        """: Some iri identifier"""
 
 
-"""Enable messaging for debugging.
-Traces Matcher.
-"""
-def set_rifps_debug():
-    for x in [
-        Assert, Retract, Modify, Execute, Frame, Member,
-        TERM, Atom, Subclass, External_formula, New,
-        GROUNDTERM,
-        IRIMETA, iri, And_frame, Frame_nometa,
-        External_iri,
-        Expr, Const, Var, List, External_term,
-        NEGATEDFORMULA, FORMULA,
-        Equal,
-        Document, Prefix, Import, Group, Strategy,
-        Forall, Implies_Core, Implies_PRD,
-        ]:
-        x.set_debug()
+        #_iri = _rdflib_sparql_parser.iri.copy()
+        #_iri.add_parse_action(rif_container.Const_shortenediri._parse)
+        _localiri = pp.Combine(_suppr('_')- Name.set_results_name("constname"))\
+                .set_name("LocalIRI")\
+                .set_parse_action(ObjConstBlankNode._parse_pyparsing)
+        _literal = _mask(self._create_literal_parser())\
+                .set_name("Literal")
+        _NumericLiteral = self._create_NumericLiteral()\
+                .set_name("NumericLiteral")
+        _CONSTRSHORT_WITH_LANGTAG = pp.Combine(String + LANGTAG)
+        #_CONSTRSHORT_WITH_LANGTAG.set_parse_action(rif_container.Const_withlang._parse)
+
+        CONSTSHORT = pp.MatchFirst((
+            IRICONST,
+            _mask(_NumericLiteral).set_results_name("value").add_parse_action(ObjConstValue._parse_pyparsing),
+            _localiri,
+            _literal,
+            ))
+        """: Shortcut for different literals
+        see `https://www.w3.org/TR/2013/REC-rif-dtb-20130205/#sec-shortcuts-constants`_
+        """
+
+        NCName.set_name("NCName")
+        Name.set_name("Name")
+        CONSTSHORT.set_name("CONSTSHORT")
+
+        Const = _mask(CONSTSHORT)\
+                .set_results_name("value").set_name("Const")\
+                .set_debug(_DEBUG)
+        """: All constant Literals and IRIs(no blank nodes)
+        Parser returns object of type Node.
+
+        :TODO: Missing  "asdf"^^<qwer>
+        """
+
+        ## rule language:
+
+        IRIMETA = pp.Forward().set_name("IRIMETA")
+        def _add_meta(expr: pp.ParseExpression, force=False):
+            if force:
+                meta = IRIMETA
+            else:
+                meta = pp.Optional(IRIMETA, default=None)
+            with_meta = meta.set_results_name("meta")\
+                    + _mask(expr).set_results_name("object")
+            return with_meta.set_parse_action(complete_object).set_debug(_DEBUG)
+
+        TERM = pp.Forward()
+
+        _slot = (
+                _mask(Name).set_results_name("argname")\
+                + _suppr("->")
+                + _add_meta(TERM).set_results_name("argvalue")
+                ).set_parse_action(ObjNamedArg._parse_pyparsing)
+        UNITERM = (
+                _add_meta(Const).set_results_name("op")\
+                + _suppr('(').set_debug(_DEBUG)\
+                + (pp.OneOrMore(_slot, stop_on=_suppr(')')).set_results_name("slots")\
+                | pp.ZeroOrMore(_add_meta(TERM), stop_on=_suppr(')')).set_results_name("args"))\
+                + _suppr(')')\
+                ).set_name("UNITERM")\
+                .set_debug(_DEBUG)
+        """: Building block for information snippets."""
+
+        Expr = pp.MatchFirst([UNITERM])\
+                .set_name("Expr")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjExpr._parse_pyparsing)
+        """: Any part of an information piece that is representable by predicate+,
+        so anything like `p(...)` used within an information piece like eg: `A = B`.
+
+        An `Expr` might be a part of an `Atom`.
+        """
+
+        External_Expr = _suppr('External') + _suppr('(') + Expr + _suppr(')')
+        """: External defined information part"""
+
+        Var = (_suppr('?') - Name.set_results_name("text")\
+                ).set_parse_action(ObjVar._parse_pyparsing)\
+                .set_name("Var")
+        """: Variable for a information piece.
+        see `https://www.w3.org/TR/2013/REC-rif-bld-20130205/#EBNF_Grammar_for_the_Presentation_Syntax_of_RIF-BLD_.28Informative.29`_
+        """
+
+        List = (_suppr('List') - (_suppr('(')\
+                + pp.Optional(\
+                pp.OneOrMore(_add_meta(TERM), stop_on=_suppr('[|)]')).set_results_name("items")\
+                + pp.Optional(_suppr('|') + _add_meta(TERM).set_results_name("rest"))\
+                )\
+                + _suppr(')')))\
+                .set_parse_action(_ObjList._parse_pyparsing)
+        """
+        see `https://www.w3.org/TR/2013/REC-rif-bld-20130205/#EBNF_Grammar_for_the_Presentation_Syntax_of_RIF-BLD_.28Informative.29`_
+        """
+
+        External_term = (\
+                _suppr('External') + _suppr('(')\
+                - _add_meta(Expr).set_results_name("content")\
+                + _suppr(')')\
+                ).set_parse_action(ObjExternal._parse_pyparsing)\
+                .set_debug(_DEBUG)\
+                .set_name("External(term)")
+        """: External defined part of information"""
+
+        TERM <<= pp.MatchFirst((Var, List, External_term, Expr, Const))\
+                .set_name("TERM")
+        """: An information part used to construct a informatio piece."""
+
+        _frame_slot = (
+                _add_meta(TERM).set_results_name("slotkey")\
+                + _suppr("->")
+                + _add_meta(TERM).set_results_name("slotvalue")
+                ).set_parse_action(ObjSlot._parse_pyparsing)
+        Frame = (_add_meta(TERM).set_results_name("object_")\
+                + _suppr('[')\
+                - (pp.OneOrMore(_add_meta(_frame_slot), stop_on=_suppr(']')).set_results_name("slots")\
+                + _suppr(']'))\
+                ).set_name("Frame")\
+                .set_parse_action(ObjFrame._parse_pyparsing)
+
+                
+        Meta_Frames = ((_suppr('And') - _suppr('(')\
+                + pp.ZeroOrMore(Frame, stop_on=_suppr(')'))\
+                +_suppr(')')))\
+                .set_name("FRAMES")
+
+        IRIMETA <<= (_suppr('(*')\
+                - (pp.Optional(IRICONST).set_results_name("iri")\
+                + (Meta_Frames.set_results_name("config_multi")\
+                | pp.Optional(Frame).set_results_name("config_single")\
+                )+ _suppr('*)'))\
+                ).set_parse_action(MetaObject._parse_pyparsing)\
+                .set_name("IRIMETA")
+        """Metainformation like identifier or further information."""
+
+        ### Formulas
+
+        Atom = pp.MatchFirst([UNITERM])\
+                .set_name("Atom")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjAtom._parse_pyparsing)
+        """: Information piece."""
+
+
+        External_Atom = _add_meta(_suppr('External') + _suppr('(')\
+                + Atom.set_results_name("content")\
+                + _suppr(')'))\
+                .set_name("External Atom")\
+                .set_parse_action(ObjExternal._parse_pyparsing)
+        """: External defined information piece.
+        :TODO: Where is this needed?
+        """
+
+        Equal = ( _add_meta(TERM).set_results_name("left") \
+                + _suppr('=') - _add_meta(TERM).set_results_name("right")\
+                ).set_parse_action(ObjEqual._parse_pyparsing)\
+                .set_name("Equal(ATOMIC)")\
+                .set_debug(_DEBUG)
+
+
+        Member = ( _add_meta(TERM).set_results_name("instance")\
+                + _suppr('#')\
+                + _add_meta(TERM).set_results_name("class_")\
+                ).set_parse_action(ObjMember._parse_pyparsing)\
+                .set_name("Member(ATOMIC)")\
+                .set_debug(_DEBUG)
+
+
+        Subclass = ( _add_meta(TERM).set_results_name("sub")\
+                + _suppr('##') - _add_meta(TERM).set_results_name("super_")\
+                ).set_parse_action(ObjSubclass._parse_pyparsing)\
+                .set_name("Subclass(ATOMIC)")\
+                .set_debug(_DEBUG)#.set_parse_action()
+
+        FORMULA = pp.Forward().set_name("FORMULA")
+        And_formula = ( _suppr('And') - _suppr('(')\
+                - pp.ZeroOrMore(_add_meta(FORMULA), stop_on=_suppr(')')).set_results_name("formulas")\
+                - _suppr(')')\
+                ).set_name("And(formula)")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjAndFormula._parse_pyparsing)
+
+        Or_formula = ( _suppr('Or') - _suppr('(')\
+                + pp.ZeroOrMore(_add_meta(FORMULA), stop_on=_suppr(')')).set_results_name("formulas")\
+                + _suppr(')')\
+                ).set_name("Or(formula)")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjOrFormula._parse_pyparsing)
+
+        Exists = ( _suppr('Exists')\
+                - pp.OneOrMore(_add_meta(Var)).set_results_name("vars_")\
+                + _suppr('(') + _add_meta(FORMULA).set_results_name("formula")\
+                + _suppr(')')\
+                ).set_name("Exists(formula)")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjExists._parse_pyparsing)
+
+        NEGATEDFORMULA = ( _suppr(pp.oneOf('Not', 'INEG'))\
+                - _suppr('(') + _add_meta(FORMULA).set_results_name("formula")\
+                + _suppr(')')\
+                ).set_parse_action(ObjNotFormula._parse_pyparsing)\
+                .set_debug(_DEBUG)\
+                .set_name("Not(formula)")
+
+        ATOMIC = pp.MatchFirst((Equal, Subclass, Member, Frame, Atom))\
+                .set_name("ATOMIC")\
+                .set_debug(_DEBUG)
+        """: Any existing information piece constructed
+        via a predicate+ (anything like `p(...)`)
+        See 'https://www.w3.org/TR/2013/REC-rif-bld-20130205/#Formulas'_ for a definition
+        """
+
+        External_atom = ( _suppr('External') - _suppr('(')\
+                + _add_meta(Atom).set_results_name("content")\
+                + _suppr(')'))\
+                .set_name("External(formula)")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjExternal._parse_pyparsing)
+
+        #getting set_debug to work seems tricky. i dont understand.
+        FORMULA <<= pp.MatchFirst((
+            And_formula, Or_formula, Exists,
+            NEGATEDFORMULA, ATOMIC, External_atom,
+            ))
+        """: Any atomic formula and conditions constructed from those atomic formulas
+        See 'https://www.w3.org/TR/2013/REC-rif-bld-20130205/#Formulas'_ for a definition
+        """
+
+        ## Actions:
+
+        Assert = ( _suppr('Assert') - _suppr('(')\
+                + _add_meta( Atom | Frame | Member ).set_results_name("target")\
+                + _suppr(')')\
+                ).set_parse_action(ObjAssert._parse_pyparsing)\
+                .set_name("Assert")
+        """: Assert action
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        _SlotRetract = (_add_meta(TERM).set_results_name("first")\
+                + _add_meta(TERM).set_results_name("second"))\
+                .set_parse_action(_ObjRetractSlot._parse_pyparsing)
+        Retract = ( _suppr('Retract') - _suppr('(')\
+                + _add_meta(Atom ^ Frame ^ _SlotRetract ^ TERM).set_results_name("target")\
+                .set_results_name("target")\
+                + _suppr(')')\
+                ).set_parse_action(ObjRetract._parse_pyparsing)\
+                .set_name("Retract")
+        """: Retract action
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        Modify = (_suppr('Modify') - _suppr('(')\
+                + _add_meta(Frame).set_results_name("target")\
+                + _suppr(')')\
+                ).set_parse_action(ObjModify._parse_pyparsing)\
+                .set_debug(_DEBUG)\
+                .set_name("Modify")
+        """: Modify action
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        Execute = (_suppr('Execute') - _suppr('(')\
+                + _add_meta(Atom).set_results_name("target")\
+                + _suppr(')')\
+                ).set_parse_action(ObjExecute._parse_pyparsing)\
+                .set_name("Execute")
+        """: Execute action
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        ACTION = pp.MatchFirst((Assert, Retract, Modify, Execute))
+
+        New = (_suppr("New") - _suppr("(") + _suppr(")")\
+                ).set_name("New()").set_parse_action(ObjNew._parse_pyparsing)
+        """: initialize variable as new
+        """
+
+        _VAR_INIT_SLOT = (_suppr('(') + _add_meta(Var)\
+                + _add_meta(New | Frame) + _suppr(')'))
+        _DO_ACTION = (_suppr("Do") - _suppr("(")\
+                + pp.ZeroOrMore(_VAR_INIT_SLOT).set_results_name("actionVar")\
+                + pp.OneOrMore(_add_meta(ACTION), stop_on=_suppr(')')).set_results_name("actions")\
+                + _suppr(')')\
+                ).set_name("DO")\
+                .set_parse_action(ObjDo._parse_pyparsing)
+
+        _AND_ACTION = (_suppr('And') - _suppr('(')\
+                - pp.ZeroOrMore(_add_meta(Atom | Frame), stop_on=_suppr(')'))\
+                .set_results_name("actions")\
+                - _suppr(')')).set_name("And(Action)")\
+                .set_parse_action(ObjAndAction._parse_pyparsing)
+        ACTION_BLOCK = (_DO_ACTION | _AND_ACTION | Atom | Frame)\
+                .set_debug(_DEBUG)\
+                .set_name("ACTION_BLOCK")
+        """: Complete action block
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        ## RULE Language
+
+        LOCATOR = pp.MatchFirst([ANGLEBRACKIRI])
+        """: Location of import directive"""
+
+        PROFILE = pp.MatchFirst([ANGLEBRACKIRI])
+        """: Profile of import directive"""
+
+        Import = (_suppr('Import') - _suppr('(')\
+                + LOCATOR.set_results_name("location")\
+                + pp.Optional(PROFILE.set_results_name("profile"))\
+                + _suppr(')')\
+                ).set_name("Import")\
+                .set_parse_action(ObjImport._parse_pyparsing)
+        """: Complete import directive
+        see``_
+        """
+
+        Implies_PRD = (_suppr('If')\
+                - _add_meta(FORMULA).set_results_name("if_")\
+                + _suppr('Then')\
+                - _add_meta(_mask(ACTION_BLOCK)).set_results_name("then")\
+                ).set_parse_action(ObjImpliesPRD._parse_pyparsing)\
+                .set_debug(_DEBUG)\
+                .set_name("Implies(PRD)")
+        """: Implies in production rules
+        see `https://www.w3.org/TR/2013/REC-rif-prd-20130205/`_
+        """
+
+        AND_ATOMIC = (pp.Or((ATOMIC)).set_parse_action(lambda x:list(x))\
+                | (_suppr('And') + _suppr('(')\
+                + (pp.ZeroOrMore(_add_meta(ATOMIC), stop_on=_suppr(')'))\
+                + _suppr(')'))))\
+                .set_name("And(ATOMIC)")
+        Implies_Core = (AND_ATOMIC.set_results_name("then")\
+                + _suppr(':-')\
+                - _add_meta(FORMULA).set_results_name("if_")\
+                ).set_parse_action(ObjImpliesCore._parse_pyparsing)\
+                .set_debug(_DEBUG)\
+                .set_name("Implies(Core)")
+        """: Implies in core and bld
+        see ``_
+        """
+
+        CLAUSE = (_DO_ACTION | _AND_ACTION | Implies_Core | Implies_PRD | ATOMIC)\
+                .set_name("CLAUSE")\
+                .set_debug(_DEBUG)
+        """: Something to do"""
+
+        RULE = pp.Forward()
+        """: Rule"""
+
+        such_that_FORMULA = _suppr('such that')\
+                - pp.OneOrMore(_add_meta(FORMULA))
+        _var_end = pp.Suppress('(') | pp.Suppress('such that')
+        Forall = (_suppr('Forall')\
+                - (pp.OneOrMore(_add_meta(Var), stop_on=_var_end).set_results_name("vars_")\
+                + pp.Optional(such_that_FORMULA).set_results_name("pattern")\
+                + _suppr('(')\
+                + _add_meta(RULE).set_results_name("formula")\
+                + _suppr(')'))\
+                ).set_name("Forall")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjForall._parse_pyparsing)
+
+        RULE <<= (Forall | CLAUSE).set_debug(_DEBUG).set_name("RULE")
+
+        Strategy = pp.MatchFirst([Const])
+        """: Strategy of group(prd)"""
+
+        Priority = pp.MatchFirst([Const])
+        """: Priority of group(prd)"""
+
+        Group = pp.Forward()
+        Group <<= (_suppr('Group')\
+                -( pp.Optional(Strategy).set_results_name("Strategy")\
+                + pp.Optional(Priority).set_results_name("Priority")\
+                + _suppr('(')\
+                + pp.ZeroOrMore(_add_meta(Group | RULE),
+                                stop_on=_suppr(')'),
+                                ).set_results_name("sentences")\
+                + _suppr(')')\
+                )).set_name("Group")\
+                .set_debug(_DEBUG)\
+                .set_parse_action(ObjGroup._parse_pyparsing)
+        """: Rule group"""
+
+        Base = _suppr('Base') - _suppr('(') - ANGLEBRACKIRI\
+                - _suppr(')')
+        """: Im not sure"""
+
+        Prefix = (_suppr('Prefix') - _suppr('(')\
+                - Name.set_results_name("shortcut")\
+                - ANGLEBRACKIRI.set_results_name("iri")\
+                - _suppr(')')\
+                ).set_parse_action(ObjPrefix._parse_pyparsing)
+        """: Prefix shortcuts available in Document"""
+
+        Document = (_suppr('Document')\
+                - _suppr('(')\
+                + pp.Optional(Base).set_results_name("Base")\
+                + pp.ZeroOrMore(Prefix).set_results_name("Prefixes")\
+                + pp.ZeroOrMore(_add_meta(Import)).set_results_name("directive")\
+                + pp.Optional(_add_meta(Group).set_results_name("payload"))\
+                + _suppr(')'\
+                ))\
+                .set_name("Document")\
+                .set_parse_action(ObjDocument._parse_pyparsing)
+        """: Complete Document"""
+
+        RIFPRD_PS = _add_meta(Document | Group | FORMULA | RULE)
+        """This should contain all possible Things with metadata. It is used, when
+        parsing arbitrary data in RIFPRD-PS.
+        """
+
+        return RIFPRD_PS.set_debug(_DEBUG)
