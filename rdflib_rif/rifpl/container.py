@@ -14,8 +14,6 @@ import pyparsing as pp
 from dataclasses import dataclass
 
 from ..utils import extract_action_vars_from_action
-from ..const_transformator import RIFtoRDFTransformator
-
 from .container_classes import MetaContainer, rif_element, TextContainer, prefix_transporter, MissingPrefix
 
 _RIF = rdflib.Namespace("http://www.w3.org/2007/rif#")
@@ -26,15 +24,12 @@ _ACT = rdflib.Namespace("http://www.w3.org/2007/rif-builtin-action#")
 
 global_graph: "Optional[rdflib.Graph]" = None
 localiriToNode: "Optional[Dict[str, Node]]" = None
-_transformator: RIFtoRDFTransformator
 
 def init_global_graph():
     global global_graph
     global_graph = rdflib.Graph()
     global localiriToNode
     localiriToNode = {}
-    global _transformator
-    _transformator = RIFtoRDFTransformator()
     #This are expected namespace
     # see `https://www.w3.org/TR/2013/REC-rif-dtb-20130205/#The_Base_and_Prefix_Directives`_
     global_graph.namespace_manager.bind("rdf", RDF)
@@ -50,8 +45,6 @@ def close_global_graph():
     global_graph = None
     global localiriToNode
     localiriToNode = None
-    global _transformator
-    _transformator = None
 
 class PyParse_Parser(abc.ABC):
     @classmethod
