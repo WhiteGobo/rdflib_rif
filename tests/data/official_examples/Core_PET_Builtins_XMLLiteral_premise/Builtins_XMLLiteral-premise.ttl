@@ -1,0 +1,31 @@
+@prefix ns1: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a ns1:Document ;
+    ns1:payload [ a ns1:Group ;
+            ns1:sentences ( [ a ns1:Implies ;
+                        ns1:if [ a ns1:And ;
+                                ns1:formulas ( [ a ns1:External ;
+                                            ns1:content [ a ns1:Atom ;
+                                                    ns1:args ( [ a ns1:Const ;
+                                                                ns1:value "<br></br>"^^rdf:XMLLiteral ] ) ;
+                                                    ns1:op [ a ns1:Const ;
+                                                            ns1:constIRI "http://www.w3.org/2007/rif-builtin-predicate#is-literal-XMLLiteral"^^xsd:anyURI ] ] ] [ a ns1:External ;
+                                            ns1:content [ a ns1:Atom ;
+                                                    ns1:args ( [ a ns1:Const ;
+                                                                ns1:value 1 ] ) ;
+                                                    ns1:op [ a ns1:Const ;
+                                                            ns1:constIRI "http://www.w3.org/2007/rif-builtin-predicate#is-literal-not-XMLLiteral"^^xsd:anyURI ] ] ] [ a ns1:External ;
+                                            ns1:content [ a ns1:Atom ;
+                                                    ns1:args ( [ a ns1:External ;
+                                                                ns1:content [ a ns1:Expr ;
+                                                                        ns1:args ( [ a ns1:Const ;
+                                                                                    ns1:value "<br></br>"^^xsd:string ] ) ;
+                                                                        ns1:op [ a ns1:Const ;
+                                                                                ns1:constIRI "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"^^xsd:anyURI ] ] ] ) ;
+                                                    ns1:op [ a ns1:Const ;
+                                                            ns1:constIRI "http://www.w3.org/2007/rif-builtin-predicate#is-literal-XMLLiteral"^^xsd:anyURI ] ] ] ) ] ;
+                        ns1:then [ a ns1:Atom ;
+                                ns1:op [ a ns1:Const ;
+                                        ns1:constIRI "http://example.org/example#ok"^^xsd:anyURI ] ] ] ) ] .

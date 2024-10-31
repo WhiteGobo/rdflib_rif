@@ -285,7 +285,7 @@ def register_rif_format() -> None:
     param(Core_PET_Builtins_XMLLiteral_conclusion,
           id="Core_PET_Builtins_XMLLiteral_conclusion"),
     param(Core_PET_Builtins_XMLLiteral_premise,
-          marks=mark.skip("Problems with xmlliteral parsing in rif parser"),
+          marks=mark.skip("Problems with xmlliteral parsing"),
           id="Core_PET_Builtins_XMLLiteral_premise"),
     param(Core_PET_Builtins_anyURI_premise,
           id="Core_PET_Builtins_anyURI_premise"),
