@@ -606,10 +606,10 @@ class RIFPSParser:
         RULE <<= (Forall | CLAUSE).set_debug(_DEBUG).set_name("RULE")
         add_custom_fail_message(RULE)
 
-        Strategy = pp.MatchFirst([Const])
+        Strategy = _mask(IRICONST)
         """: Strategy of group(prd)"""
 
-        Priority = pp.MatchFirst([Const])
+        Priority = _NumericLiteral | _literal
         """: Priority of group(prd)"""
 
         Group = pp.Forward()

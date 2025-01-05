@@ -878,17 +878,26 @@ class ObjForall(PyParse_Parser, RDFSObject):
         add_to_global_graph(self.idnode, _RIF.formula, self.formula, g)
 
 class ObjGroup(PyParse_Parser, RDFSObject):
-    def __init__(self, sentences: List[Node], strategy: Optional,
-                 priority: Optional):
+    def __init__(self, sentences: List[Node], strategy: Optional[URIRef],
+                 priority: Optional[int]):
         super().__init__()
         self.sentences = list(sentences)
         self.strategy = strategy
         self.priority = priority
 
     @classmethod
-    def parse_rifpl(cls, sentences: List[Node] = [], Strategy=None,
-                    Priority=None, value=None, constIRI=None):
-        return cls(sentences, Strategy, Priority)
+    def parse_rifpl(cls, sentences: List[Node] = [],
+                    Strategy: Optional[URIRef] = None,
+                    Priority: Optional[Literal] = None,
+                    value=None, constIRI=None):
+        prio: int
+        if Priority is None:
+            prio = None
+        elif isinstance(Priority, Literal):
+            prio = Priority.value
+        else:
+            prio = Priority.as_node().value
+        return cls(sentences, Strategy, prio)
 
     def add_to_global_graph(self, g):
         super().add_to_global_graph(g)
@@ -901,7 +910,7 @@ class ObjGroup(PyParse_Parser, RDFSObject):
             if self.strategy is not None:
                 add_to_global_graph(behavior, _RIF.ConflictResolution, self.strategy.as_node(), g)
             if self.priority is not None:
-                add_to_global_graph(behavior, _RIF.Priority, self.priority.as_node(), g)
+                add_to_global_graph(behavior, _RIF.Priority, Literal(self.priority), g)
 
 class ObjImport(PyParse_Parser, RDFSObject):
     def __init__(self, location: str, profile: Optional[str] = None):

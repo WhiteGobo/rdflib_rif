@@ -3,6 +3,6 @@ Document(
  Group (
   Group ex:strategy ()
   Group 42 ()
-  Group ex:strategy 42 ()
+  Group <http://example.org/example#strategy> "42"^^xs:integer ()
  )
 )
