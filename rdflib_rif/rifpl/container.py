@@ -52,7 +52,8 @@ class PyParse_Parser(abc.ABC):
         try:
             return cls.parse_rifpl(**parseresults.as_dict())
         except TypeError as err:
-            raise Exception(f"Got wrong data from parser for class {cls}. "
+            raise Exception(f"Internal Error. "
+                            "Got wrong data from parser for class {cls}. "
                             "Got: %s" % (parseresults.asDict())) from err
         except Exception as err:
             raise Exception(f"raised {type(err)} from "
@@ -877,19 +878,30 @@ class ObjForall(PyParse_Parser, RDFSObject):
         add_to_global_graph(self.idnode, _RIF.formula, self.formula, g)
 
 class ObjGroup(PyParse_Parser, RDFSObject):
-    def __init__(self, sentences: List[Node]):
+    def __init__(self, sentences: List[Node], strategy: Optional,
+                 priority: Optional):
         super().__init__()
         self.sentences = list(sentences)
+        self.strategy = strategy
+        self.priority = priority
 
     @classmethod
-    def parse_rifpl(cls, sentences: List[Node]):
-        return cls(sentences)
+    def parse_rifpl(cls, sentences: List[Node] = [], Strategy=None,
+                    Priority=None, value=None, constIRI=None):
+        return cls(sentences, Strategy, Priority)
 
     def add_to_global_graph(self, g):
         super().add_to_global_graph(g)
         add_to_global_graph(self.idnode, RDF.type, _RIF.Group, g)
         add_collection_to_global_graph(self.idnode, _RIF.sentences,
                                        self.sentences, g)
+        if self.strategy is not None or self.priority is not None:
+            behavior = BNode()
+            add_to_global_graph(self.idnode, _RIF.behavior, behavior, g)
+            if self.strategy is not None:
+                add_to_global_graph(behavior, _RIF.ConflictResolution, self.strategy.as_node(), g)
+            if self.priority is not None:
+                add_to_global_graph(behavior, _RIF.Priority, self.priority.as_node(), g)
 
 class ObjImport(PyParse_Parser, RDFSObject):
     def __init__(self, location: str, profile: Optional[str] = None):

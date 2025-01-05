@@ -1,0 +1,14 @@
+@prefix ns1: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a ns1:Document ;
+    ns1:payload [ a ns1:Group ;
+            ns1:sentences ( [ a ns1:Group ;
+                        ns1:behavior [ ns1:ConflictResolution <http://example.org/example#strategy> ] ;
+                        ns1:sentences () ] [ a ns1:Group ;
+                        ns1:behavior [ ns1:ConflictResolution 42 ] ;
+                        ns1:sentences () ] [ a ns1:Group ;
+                        ns1:behavior [ ns1:ConflictResolution <http://example.org/example#strategy> ;
+                                ns1:Priority 42 ] ;
+                        ns1:sentences () ] ) ] .

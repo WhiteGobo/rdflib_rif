@@ -1,0 +1,20 @@
+<Document>
+    <Group>
+        <Group>
+            <behavior>
+                <ConflictResolution> http://example.org/example#strategy </ConflictResolution>
+            </behavior>
+        </Group>
+        <Group>
+            <behavior>
+                <Priority> 42 </Priority>
+            </behavior>
+        </Group>
+        <Group>
+            <behavior>
+                <ConflictResolution> http://example.org/example#strategy </ConflictResolution>
+                <Priority> 42 </Priority>
+            </behavior>
+        </Group>
+    </Group>
+</Document>
