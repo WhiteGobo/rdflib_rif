@@ -1,0 +1,8 @@
+Document(
+ Prefix(ex <http://example.org/example#>)
+ Group (
+  Group ex:strategy ()
+  Group 42 ()
+  Group ex:strategy 42 ()
+ )
+)
