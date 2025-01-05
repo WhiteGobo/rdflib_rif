@@ -33,6 +33,22 @@ from ..rif_namespace import XSD
 _DEBUG = False
 """bool: setting if debug is enabled. Currently only usable for development"""
 
+
+def add_custom_fail_message(elem: pp.ParserElement, msg: str = None
+                            ) -> pp.ParserElement:
+    if msg is None:
+        msg = "expected {}".format(elem.expr)
+    def error_handling(
+            s: str, loc: int, expr: pp.ParserElement, err: Exception
+            ) -> None:
+        """test set_fail_action method"""
+        if type(err) == pp.ParseException:
+            newmsg = "{}\nCaused by:\n{}".format(msg, err.explain(depth=0))
+            raise pp.ParseFatalException(pstr=s, loc=loc,
+                                         msg=newmsg, elem=elem) from err
+        return
+    return elem.set_fail_action(error_handling)
+
 def _mask(expr: "ParserElement"):
     return pp.MatchFirst([expr])
 
@@ -260,13 +276,13 @@ class RIFPSParser:
         ## rule language:
 
         IRIMETA = pp.Forward().set_name("IRIMETA")
+        IRIMETA_OPT = pp.Optional(IRIMETA, default=None)
         def _add_meta(expr: pp.ParseExpression, force=False):
             if force:
                 meta = IRIMETA
             else:
-                meta = pp.Optional(IRIMETA, default=None)
-            with_meta = meta.set_results_name("meta")\
-                    + _mask(expr).set_results_name("object")
+                meta = IRIMETA_OPT
+            with_meta = meta + expr
             return with_meta.set_parse_action(complete_object).set_debug(_DEBUG)
 
         TERM = pp.Forward()
@@ -359,7 +375,8 @@ class RIFPSParser:
 
         ### Formulas
 
-        Atom = pp.MatchFirst([UNITERM])\
+        #Atom = pp.MatchFirst([UNITERM])\
+        Atom = UNITERM.copy()\
                 .set_name("Atom")\
                 .set_debug(_DEBUG)\
                 .set_parse_action(ObjAtom._parse_pyparsing)
@@ -427,8 +444,7 @@ class RIFPSParser:
                 .set_name("Not(formula)")
 
         ATOMIC = pp.MatchFirst((Equal, Subclass, Member, Frame, Atom))\
-                .set_name("ATOMIC")\
-                .set_debug(_DEBUG)
+                .set_name("ATOMIC")
         """: Any existing information piece constructed
         via a predicate+ (anything like `p(...)`)
         See 'https://www.w3.org/TR/2013/REC-rif-bld-20130205/#Formulas'_ for a definition
@@ -576,17 +592,19 @@ class RIFPSParser:
         such_that_FORMULA = _suppr('such that')\
                 - pp.OneOrMore(_add_meta(FORMULA))
         _var_end = pp.Suppress('(') | pp.Suppress('such that')
+
         Forall = (_suppr('Forall')\
                 - (pp.OneOrMore(_add_meta(Var), stop_on=_var_end).set_results_name("vars_")\
                 + pp.Optional(such_that_FORMULA).set_results_name("pattern")\
                 + _suppr('(')\
-                + _add_meta(RULE).set_results_name("formula")\
+                - _add_meta(RULE).set_results_name("formula")\
                 + _suppr(')'))\
                 ).set_name("Forall")\
                 .set_debug(_DEBUG)\
                 .set_parse_action(ObjForall._parse_pyparsing)
 
         RULE <<= (Forall | CLAUSE).set_debug(_DEBUG).set_name("RULE")
+        add_custom_fail_message(RULE)
 
         Strategy = pp.MatchFirst([Const])
         """: Strategy of group(prd)"""
