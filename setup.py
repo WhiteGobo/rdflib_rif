@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='rdflib_rif',
-    version='0.3.0',
+    version='0.3.1',
     description='Parser for rif as plugin for rdflib',
     long_description="""This module should allow rdflib to load rif.""",
     long_description_content_type="text/markdown",
