@@ -43,7 +43,7 @@ def add_custom_fail_message(elem: pp.ParserElement, msg: str = None
             ) -> None:
         """test set_fail_action method"""
         if type(err) == pp.ParseException:
-            newmsg = "{}\nCaused by:\n{}".format(msg, err.explain(depth=0))
+            newmsg = "{}\nCaused by:\n{}\n\n".format(msg, err.explain(depth=0))
             raise pp.ParseFatalException(pstr=s, loc=loc,
                                          msg=newmsg, elem=elem) from err
         return
