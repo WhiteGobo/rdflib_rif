@@ -586,8 +586,9 @@ class ObjDo(PyParse_Parser, RDFSObject):
     def add_to_global_graph(self, g):
         super().add_to_global_graph(g)
         add_to_global_graph(self.idnode, RDF.type, _RIF.Do, g)
-        if len(self.actionVar) > 0:
-            add_collection_to_global_graph(self.idnode, _RIF.actionVar, self.actionVar, g)
+        for i in range(0, len(self.actionVar), 2):
+            tmp_actionVar = [self.actionVar[i], self.actionVar[i+1]]
+            add_collection_to_global_graph(self.idnode, _RIF.actionVar, tmp_actionVar, g)
         add_collection_to_global_graph(self.idnode, _RIF.actions, self.actions, g)
 
 class ObjAndAction(PyParse_Parser, RDFSObject):

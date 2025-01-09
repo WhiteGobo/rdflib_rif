@@ -1,0 +1,39 @@
+@prefix ns1: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+[] a ns1:Document ;
+    ns1:payload [ a ns1:Group ;
+            ns1:sentences ( [ a ns1:Forall ;
+                        ns1:formula [ a ns1:Implies ;
+                                ns1:if [ a ns1:Frame ;
+                                        ns1:object [ a ns1:Var ;
+                                                ns1:varname "X" ] ;
+                                        ns1:slots ( [ a ns1:Slot ;
+                                                    ns1:slotkey [ a ns1:Const ;
+                                                            ns1:constIRI "http://example.org/example#status"^^xsd:anyURI ] ;
+                                                    ns1:slotvalue [ a ns1:Const ;
+                                                            ns1:value "gold"^^xsd:string ] ] ) ] ;
+                                ns1:then [ a ns1:Do ;
+                                        ns1:actionVar ( [ a ns1:Var ;
+                                                    ns1:varname "Y" ] [ a ns1:New ] ),
+                                            ( [ a ns1:Var ;
+                                                    ns1:varname "Z" ] [ a ns1:Frame ;
+                                                    ns1:object [ a ns1:Var ;
+                                                            ns1:varname "X" ] ;
+                                                    ns1:slots ( [ a ns1:Slot ;
+                                                                ns1:slotkey [ a ns1:Const ;
+                                                                        ns1:constIRI "http://example.org/example#test"^^xsd:anyURI ] ;
+                                                                ns1:slotvalue [ a ns1:Var ;
+                                                                        ns1:varname "Z" ] ] ) ] ) ;
+                                        ns1:actions ( [ a ns1:Assert ;
+                                                    ns1:target [ a ns1:Frame ;
+                                                            ns1:object [ a ns1:Var ;
+                                                                    ns1:varname "X" ] ;
+                                                            ns1:slots ( [ a ns1:Slot ;
+                                                                        ns1:slotkey [ a ns1:Const ;
+                                                                                ns1:constIRI "http://example.org/example#discount"^^xsd:anyURI ] ;
+                                                                        ns1:slotvalue [ a ns1:Const ;
+                                                                                ns1:value "10"^^xsd:string ] ] ) ] ] ) ] ] ;
+                        ns1:vars ( [ a ns1:Var ;
+                                    ns1:varname "X" ] ) ] ) ] .
