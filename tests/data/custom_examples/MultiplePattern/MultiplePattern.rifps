@@ -1,0 +1,12 @@
+Document( 
+ Prefix(ex <http://example.com/>)
+ 
+ Group (
+  (* ex:forall *) Forall ?x such that
+    (* ex:patternA *) ?x[ex:c -> ex:d]
+    (* ex:patternB *) ?x[ex:e -> ex:f]
+  (
+   (* ex:action *) ?x[ex:a -> ex:b]
+  )
+ )
+)

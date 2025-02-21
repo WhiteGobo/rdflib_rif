@@ -867,15 +867,17 @@ class ObjForall(PyParse_Parser, RDFSObject):
     def parse_rifpl(cls, vars_: List[Node], formula: Node,
                     pattern: List[Node] = None):
         if pattern is not None:
-            pattern, = pattern
+            pattern = list(pattern)
+        else:
+            pattern = []
         return cls(vars_, formula, pattern)
 
     def add_to_global_graph(self, g):
         super().add_to_global_graph(g)
         add_to_global_graph(self.idnode, RDF.type, _RIF.Forall, g)
         add_collection_to_global_graph(self.idnode, _RIF["vars"], self.vars_, g)
-        if self.pattern is not None:
-            add_to_global_graph(self.idnode, _RIF.pattern, self.pattern, g)
+        for x in self.pattern:
+            add_to_global_graph(self.idnode, _RIF.pattern, x, g)
         add_to_global_graph(self.idnode, _RIF.formula, self.formula, g)
 
 class ObjGroup(PyParse_Parser, RDFSObject):

@@ -1,0 +1,41 @@
+@prefix ns1: <http://www.w3.org/2007/rif#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://example.com/action> a ns1:Frame ;
+    ns1:object [ a ns1:Var ;
+            ns1:varname "x" ] ;
+    ns1:slots ( [ a ns1:Slot ;
+                ns1:slotkey [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/a"^^xsd:anyURI ] ;
+                ns1:slotvalue [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/b"^^xsd:anyURI ] ] ) .
+
+<http://example.com/forall> a ns1:Forall ;
+    ns1:formula <http://example.com/action> ;
+    ns1:pattern <http://example.com/patternA>,
+        <http://example.com/patternB> ;
+    ns1:vars ( [ a ns1:Var ;
+                ns1:varname "x" ] ) .
+
+<http://example.com/patternA> a ns1:Frame ;
+    ns1:object [ a ns1:Var ;
+            ns1:varname "x" ] ;
+    ns1:slots ( [ a ns1:Slot ;
+                ns1:slotkey [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/c"^^xsd:anyURI ] ;
+                ns1:slotvalue [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/d"^^xsd:anyURI ] ] ) .
+
+<http://example.com/patternB> a ns1:Frame ;
+    ns1:object [ a ns1:Var ;
+            ns1:varname "x" ] ;
+    ns1:slots ( [ a ns1:Slot ;
+                ns1:slotkey [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/e"^^xsd:anyURI ] ;
+                ns1:slotvalue [ a ns1:Const ;
+                        ns1:constIRI "http://example.com/f"^^xsd:anyURI ] ] ) .
+
+[] a ns1:Document ;
+    ns1:payload [ a ns1:Group ;
+            ns1:sentences ( <http://example.com/forall> ) ] .
